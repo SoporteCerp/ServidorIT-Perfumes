@@ -12,6 +12,7 @@ import Checkout from './pages/Checkout';
 import Orders from './pages/Orders';
 import Dashboard from './pages/Dashboard';
 import AdminInventory from './pages/AdminInventory';
+import Profile from './pages/Profile';
 import './App.css';
 
 function App() {
@@ -43,6 +44,7 @@ function App() {
             <Route path="/orders" element={<Orders />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/inventory" element={<AdminInventory />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Route>
         )}

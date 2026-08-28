@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { getDocuments, addDocument, updateDocument, deleteDocument } from '../services/firestoreService';
 
+const defaultForm = { name: '', brand: '', price: '', stock: '', category: 'unisex', description: '', image: '' };
+
 export default function AdminInventory() {
   const [products, setProducts] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
-  const [form, setForm] = useState({ name: '', brand: '', price: '', stock: '', category: 'unisex', description: '', image: '' });
+  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState(defaultForm);
 
   useEffect(() => { loadProducts(); }, []);
 
@@ -13,17 +16,24 @@ export default function AdminInventory() {
     setProducts(data);
   };
 
-  const handleAdd = async (e) => {
+  const openAdd = () => { setEditingId(null); setForm(defaultForm); setModalOpen(true); };
+
+  const openEdit = (p) => {
+    setEditingId(p.id);
+    setForm({ name: p.name, brand: p.brand, price: p.price, stock: p.stock, category: p.category, description: p.description || '', image: p.image || '' });
+    setModalOpen(true);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name || !form.brand || !form.price) { alert('Nombre, marca y precio obligatorios'); return; }
-    await addDocument('products', {
-      ...form,
-      price: parseFloat(form.price),
-      stock: parseInt(form.stock) || 0,
-      active: true
-    });
+    const data = { ...form, price: parseFloat(form.price), stock: parseInt(form.stock) || 0 };
+    if (editingId) {
+      await updateDocument('products', editingId, data);
+    } else {
+      await addDocument('products', { ...data, active: true });
+    }
     setModalOpen(false);
-    setForm({ name: '', brand: '', price: '', stock: '', category: 'unisex', description: '', image: '' });
     loadProducts();
   };
 
@@ -65,6 +75,7 @@ export default function AdminInventory() {
               <button className="stock-btn" onClick={() => updateStock(p.id, p.stock, 'add')}>+</button>
             </div>
             <div style={{display:'flex',gap:8}}>
+              <button className="btn btn-sm btn-primary" onClick={() => openEdit(p)}>Editar</button>
               <button className={`btn btn-sm ${p.active ? 'btn-outline' : 'btn-success'}`} onClick={() => toggleActive(p.id, p.active)}>
                 {p.active ? 'Desactivar' : 'Activar'}
               </button>
@@ -74,19 +85,19 @@ export default function AdminInventory() {
         </div>
       ))}
 
-      <button className="fab" onClick={() => setModalOpen(true)}>+</button>
+      <button className="fab" onClick={openAdd}>+</button>
 
       {modalOpen && (
         <div className="modal-overlay" onClick={() => setModalOpen(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <h2 className="modal-title">Nuevo Perfume</h2>
-            <form onSubmit={handleAdd}>
+            <h2 className="modal-title">{editingId ? 'Editar Perfume' : 'Nuevo Perfume'}</h2>
+            <form onSubmit={handleSubmit}>
               <div className="form-group"><input className="form-input" placeholder="Nombre *" value={form.name} onChange={e => setForm({...form, name: e.target.value})} /></div>
               <div className="form-group"><input className="form-input" placeholder="Marca *" value={form.brand} onChange={e => setForm({...form, brand: e.target.value})} /></div>
               <div className="form-group"><input className="form-input" placeholder="Precio *" type="number" value={form.price} onChange={e => setForm({...form, price: e.target.value})} /></div>
               <div className="form-group"><input className="form-input" placeholder="Stock" type="number" value={form.stock} onChange={e => setForm({...form, stock: e.target.value})} /></div>
               <div className="chip-row">
-                {[{v:'hombre',l:'Hombre'},{v:'mujer',l:'Mujer'},{v:'unisex',l:'Unisex'}].map(c => (
+                {[{v:'hombre',l:'Hombre'},{v:'mujer',l:'Mujer'},{v:'unisex',l:'Unisex'},{v:'ofertas',l:'Ofertas'},{v:'nuevos',l:'Nuevos'},{v:'importados',l:'Importados'}].map(c => (
                   <button key={c.v} type="button" className={`chip ${form.category === c.v ? 'active' : ''}`} onClick={() => setForm({...form, category: c.v})}>{c.l}</button>
                 ))}
               </div>
@@ -94,7 +105,7 @@ export default function AdminInventory() {
               <div className="form-group"><textarea className="form-input" placeholder="Descripcion" value={form.description} onChange={e => setForm({...form, description: e.target.value})} style={{minHeight:60}} /></div>
               <div className="modal-actions">
                 <button type="button" className="btn btn-outline" onClick={() => setModalOpen(false)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary">Guardar</button>
+                <button type="submit" className="btn btn-primary">{editingId ? 'Actualizar' : 'Guardar'}</button>
               </div>
             </form>
           </div>

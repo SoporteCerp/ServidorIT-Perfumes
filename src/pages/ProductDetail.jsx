@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getDocuments } from '../services/firestoreService';
 import { addToCart, getCartCount } from '../services/cartService';
+import { toggleWishlist, isInWishlist } from '../services/wishlistService';
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -9,12 +10,15 @@ export default function ProductDetail() {
   const [product, setProduct] = useState(null);
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
+  const [favorited, setFavorited] = useState(false);
 
   useEffect(() => { loadProduct(); }, [id]);
 
   const loadProduct = async () => {
     const all = await getDocuments('products');
-    setProduct(all.find(p => p.id === id));
+    const p = all.find(p => p.id === id);
+    setProduct(p);
+    setFavorited(isInWishlist(id));
   };
 
   const handleAdd = () => {
@@ -23,12 +27,24 @@ export default function ProductDetail() {
     setTimeout(() => setAdded(false), 2000);
   };
 
+  const handleFavorite = () => {
+    toggleWishlist(id);
+    setFavorited(!favorited);
+  };
+
   if (!product) return <div className="empty-state"><div className="empty-icon">⏳</div></div>;
 
   return (
     <>
-      <div className="detail-image">
+      <div className="detail-image" style={{position:'relative'}}>
         {product.image ? <img src={product.image} alt={product.name} style={{width:'100%',height:'100%',objectFit:'cover'}} /> : '🧴'}
+        <button onClick={handleFavorite} style={{
+          position:'absolute', top:15, right:15, width:44, height:44, borderRadius:'50%',
+          background:'#fff', border:'none', fontSize:22, cursor:'pointer',
+          boxShadow:'0 2px 8px rgba(0,0,0,0.15)', display:'flex', alignItems:'center', justifyContent:'center'
+        }}>
+          {favorited ? '❤️' : '🤍'}
+        </button>
       </div>
       <div className="detail-info">
         <div className="detail-brand">{product.brand}</div>

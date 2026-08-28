@@ -473,3 +473,55 @@ body {
 
 .mb-15 { margin-bottom: 15px; }
 .text-center { text-align: center; }
+
+.profile-page { padding-bottom: 20px; }
+.profile-card {
+  background: linear-gradient(135deg, var(--primary-dark), var(--secondary));
+  border-radius: 16px;
+  padding: 30px;
+  text-align: center;
+  color: #fff;
+  margin-bottom: 20px;
+}
+.profile-avatar {
+  width: 70px; height: 70px; border-radius: 50%;
+  background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center;
+  font-size: 28px; font-weight: 700; margin: 0 auto 10px;
+}
+.profile-email { font-size: 14px; opacity: 0.9; }
+.profile-role { font-size: 13px; opacity: 0.8; margin-top: 4px; }
+.form-label { font-size: 13px; font-weight: 600; color: var(--gray-700); margin-bottom: 6px; display: block; }
+
+.recent-orders-section { margin-bottom: 20px; }
+.recent-order-card {
+  display: flex; justify-content: space-between; align-items: center;
+  background: #fff; border-radius: 12px; padding: 14px; margin-bottom: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05); cursor: pointer;
+}
+.recent-order-id { font-weight: 700; font-size: 14px; }
+.recent-order-date { font-size: 12px; color: var(--gray-400); }
+.recent-order-right { text-align: right; }
+.recent-order-total { font-size: 16px; font-weight: 700; color: var(--primary-dark); margin-top: 4px; }
+
+.offers-banner {
+  background: linear-gradient(135deg, #FEF3C7, #FDE68A);
+  border-radius: 14px; padding: 16px; margin-bottom: 16px;
+}
+.offers-header { font-size: 16px; font-weight: 700; color: #92400E; margin-bottom: 12px; }
+.offers-scroll { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; }
+.offer-card {
+  min-width: 110px; background: #fff; border-radius: 10px; overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1); cursor: pointer; flex-shrink: 0;
+}
+.offer-image {
+  width: 110px; height: 90px;
+  background: linear-gradient(135deg, #f3e8ff, #fce7f3);
+  display: flex; align-items: center; justify-content: center; font-size: 30px;
+}
+.offer-name { padding: 6px 8px; font-size: 11px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.offer-price { padding: 0 8px 8px; font-size: 14px; font-weight: 700; color: var(--primary-dark); }
+
+.status-badge {
+  display: inline-block; padding: 3px 8px; border-radius: 8px;
+  font-size: 11px; font-weight: 600;
+}

@@ -57,6 +57,7 @@ export default function Layout() {
               🛒
               {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
             </button>
+            <button className="icon-btn" onClick={() => navigate('/profile')}>👤</button>
             <button className="icon-btn" onClick={handleLogout}>🚪</button>
           </div>
         </div>
