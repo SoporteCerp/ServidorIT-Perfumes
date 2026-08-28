@@ -63,11 +63,12 @@ export const showToast = (title, message) => {
   setTimeout(() => toast.remove(), 5000);
 };
 
-export const subscribeToNotifications = (callback) => {
+export const subscribeToNotifications = async (callback) => {
   const user = auth.currentUser;
   if (!user) return () => {};
 
   let initialized = { orders: false, payments: false, chat: false };
+  const role = await getUserRole(user.uid);
 
   const unsubNewOrders = onSnapshot(
     query(collection(db, 'orders'), where('status', '==', 'pendiente_confirmacion'), orderBy('createdAt', 'desc')),
@@ -89,18 +90,26 @@ export const subscribeToNotifications = (callback) => {
     }
   );
 
-  const unsubChat = onSnapshot(
-    query(collection(db, 'chats'), where('userId', '==', user.uid)),
-    (snapshot) => {
-      if (!initialized.chat) { initialized.chat = true; return; }
-      snapshot.docChanges().forEach(c => {
-        if (c.type === 'modified') {
-          const chat = c.doc.data();
+  let chatQuery;
+  if (role === 'admin') {
+    chatQuery = query(collection(db, 'chats'));
+  } else {
+    chatQuery = query(collection(db, 'chats'), where('userId', '==', user.uid));
+  }
+
+  const unsubChat = onSnapshot(chatQuery, (snapshot) => {
+    if (!initialized.chat) { initialized.chat = true; return; }
+    snapshot.docChanges().forEach(c => {
+      if (c.type === 'modified') {
+        const chat = c.doc.data();
+        if (role === 'admin') {
           if (chat.lastMessage && !chat.lastMessage.startsWith('Admin')) callback(prev => prev + 1);
+        } else {
+          if (chat.lastMessage && chat.lastMessage.startsWith('Admin')) callback(prev => prev + 1);
         }
-      });
-    }
-  );
+      }
+    });
+  });
 
   return () => { unsubNewOrders(); unsubPendingPayments(); unsubChat(); };
 };
@@ -116,7 +125,7 @@ export const startListening = async () => {
     listenNewOrders();
     listenPendingPayments();
   }
-  listenChatMessages(user.uid);
+  listenChatMessages(user.uid, role);
 };
 
 export const stopListening = () => {
@@ -159,17 +168,29 @@ const listenPendingPayments = () => {
   unsubscribers.push(unsub);
 };
 
-const listenChatMessages = (userId) => {
+const listenChatMessages = (userId, role) => {
   let initialized = false;
-  const q = query(collection(db, 'chats'), where('userId', '==', userId));
+  let q;
+  if (role === 'admin') {
+    q = query(collection(db, 'chats'));
+  } else {
+    q = query(collection(db, 'chats'), where('userId', '==', userId));
+  }
   const unsub = onSnapshot(q, (snapshot) => {
     if (!initialized) { initialized = true; return; }
     snapshot.docChanges().forEach((change) => {
-      if (change.type === 'modified' && !shownChatIds.has(change.doc.id)) {
-        shownChatIds.add(change.doc.id);
+      if (change.type === 'modified' && !shownChatIds.has(change.doc.id + '_' + Date.now())) {
         const chat = change.doc.data();
-        if (chat.lastMessage && !chat.lastMessage.startsWith('Admin')) {
-          showToast('Nuevo Mensaje', chat.lastMessage);
+        if (role === 'admin') {
+          if (chat.lastMessage && !chat.lastMessage.startsWith('Admin')) {
+            shownChatIds.add(change.doc.id + '_' + Date.now());
+            showToast('Nuevo Mensaje', `${chat.userName || 'Cliente'}: ${chat.lastMessage}`);
+          }
+        } else {
+          if (chat.lastMessage && chat.lastMessage.startsWith('Admin')) {
+            shownChatIds.add(change.doc.id + '_' + Date.now());
+            showToast('Respuesta del Admin', chat.lastMessage);
+          }
         }
       }
     });
