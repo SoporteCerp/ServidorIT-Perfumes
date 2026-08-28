@@ -298,11 +298,11 @@ export default function Checkout() {
       <div style={{textAlign:'center',margin:'15px 0',color:'var(--gray-400)',fontSize:14}}>— o —</div>
 
       <button className="btn" onClick={() => {
-        const items = cart.map(i => `• ${i.name} x${i.quantity} = $${(i.price * i.quantity).toFixed(2)}`).join('%0A');
-        const msg = `🛒 *Pedido Esencia Gale*%0A%0A${items}%0A%0A💰 *Total: $${finalTotal.toFixed(2)}*%0A%0A👤 ${name}%0A📞 ${phone}%0A📍 ${address}`;
+        const items = cart.map(i => `- ${i.name} x${i.quantity} = $${(i.price * i.quantity).toFixed(2)}`).join('\n');
+        const msg = encodeURIComponent(`Pedido Esencia Gale\n\n${items}\n\nTotal: $${finalTotal.toFixed(2)}\n\nNombre: ${name}\nTelefono: ${phone}\nDireccion: ${address}`);
         window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, '_blank');
       }} style={{background:'#25D366',color:'#fff'}}>
-        📱 Enviar Pedido por WhatsApp
+        Enviar Pedido por WhatsApp
       </button>
     </div>
   );

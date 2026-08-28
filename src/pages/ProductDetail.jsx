@@ -136,10 +136,10 @@ export default function ProductDetail() {
             </button>
 
             <button className="btn" onClick={() => {
-              const msg = `🛒 *Pedido*%0A%0A• ${product.name} x${qty}%0A💰 Total: $${(product.price * qty).toFixed(2)}`;
+              const msg = encodeURIComponent(`Pedido Esencia Gale\n\n*${product.name}*\nCantidad: ${qty}\nPrecio: $${product.price.toFixed(2)} c/u\n\nTotal: $${(product.price * qty).toFixed(2)}`);
               window.open(`https://wa.me/50767238540?text=${msg}`, '_blank');
             }} style={{background:'#25D366',color:'#fff',marginTop:8}}>
-              📱 Comprar por WhatsApp
+              Comprar por WhatsApp
             </button>
 
             <p style={{textAlign:'center',fontSize:13,color:'var(--gray-400)',marginTop:10}}>
