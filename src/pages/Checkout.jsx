@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getCart, getCartTotal, clearCart } from '../services/cartService';
 import { addDocument } from '../services/firestoreService';
 import { auth } from '../services/firebase';
+import { sendInvoice } from '../services/emailService';
 
 const YAPPY_NUMBER = '62686706';
 
@@ -11,6 +12,7 @@ export default function Checkout() {
   const [cart, setCart] = useState([]);
   const [total, setTotal] = useState(0);
   const [name, setName] = useState(auth.currentUser?.displayName || '');
+  const [email, setEmail] = useState(auth.currentUser?.email || '');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
@@ -27,10 +29,11 @@ export default function Checkout() {
     if (!name || !phone || !address) { alert('Completa todos los campos'); return; }
     setLoading(true);
     try {
-      await addDocument('orders', {
+      const docRef = await addDocument('orders', {
         items: cart.map(i => ({ id: i.id, name: i.name, brand: i.brand, price: i.price, quantity: i.quantity, image: i.image })),
         total,
         customerName: name,
+        customerEmail: email,
         customerPhone: phone,
         customerAddress: address,
         paymentMethod: 'yappy',
@@ -38,6 +41,17 @@ export default function Checkout() {
         status: 'pendiente',
         userId: auth.currentUser.uid
       });
+
+      if (email) {
+        await sendInvoice({
+          customerName: name,
+          customerEmail: email,
+          orderId: docRef,
+          items: cart.map(i => ({ name: i.name, brand: i.brand, price: i.price, quantity: i.quantity })),
+          total
+        });
+      }
+
       clearCart();
       setStep('yappy');
     } catch (e) { alert('Error al crear pedido'); }
@@ -61,6 +75,12 @@ export default function Checkout() {
           <p style={{fontSize:32,fontWeight:700,color:'var(--primary-dark)'}}>${total.toFixed(2)}</p>
           <p style={{fontSize:12,color:'var(--gray-400)',marginTop:10}}>Yappy a: {YAPPY_NUMBER}</p>
         </div>
+        {email && (
+          <div className="card" style={{marginTop:10,textAlign:'center'}}>
+            <p style={{fontSize:13,color:'var(--gray-500)'}}>📧 La factura fue enviada a:</p>
+            <p style={{fontWeight:600,color:'var(--primary-dark)'}}>{email}</p>
+          </div>
+        )}
         <button className="btn btn-success" style={{marginTop:15}} onClick={() => { navigate('/orders'); }}>
           ✓ Ya Pague
         </button>
@@ -79,6 +99,10 @@ export default function Checkout() {
         <div className="form-group">
           <label style={{fontSize:14,fontWeight:600,display:'block',marginBottom:6}}>Nombre *</label>
           <input className="form-input" placeholder="Tu nombre" value={name} onChange={e => setName(e.target.value)} />
+        </div>
+        <div className="form-group">
+          <label style={{fontSize:14,fontWeight:600,display:'block',marginBottom:6}}>Email (para recibir factura)</label>
+          <input className="form-input" placeholder="tu@email.com" value={email} onChange={e => setEmail(e.target.value)} type="email" />
         </div>
         <div className="form-group">
           <label style={{fontSize:14,fontWeight:600,display:'block',marginBottom:6}}>Telefono *</label>
