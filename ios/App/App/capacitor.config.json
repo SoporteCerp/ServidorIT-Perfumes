@@ -1,0 +1,30 @@
+{
+	"appId": "com.esenciagale.app",
+	"appName": "Esencia Gale",
+	"webDir": "dist",
+	"ios": {
+		"contentInset": "automatic",
+		"preferredContentMode": "mobile",
+		"scheme": "Esencia Gale"
+	},
+	"plugins": {
+		"PushNotifications": {
+			"presentationOptions": [
+				"badge",
+				"sound",
+				"alert"
+			]
+		},
+		"FirebaseMessaging": {
+			"presentationOptions": [
+				"badge",
+				"sound",
+				"alert"
+			]
+		}
+	},
+	"packageClassList": [
+		"FirebaseMessagingPlugin",
+		"PushNotificationsPlugin"
+	]
+}
