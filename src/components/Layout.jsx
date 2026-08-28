@@ -32,7 +32,7 @@ export default function Layout() {
     setCartCount(getCartCount());
     requestNotificationPermission();
     setupForegroundListener();
-    const unsubNotifs = subscribeToNotifications(setNotifCount);
+    const unsubNotifs = subscribeToNotifications((fn) => setNotifCount(fn));
     startListening();
     return () => { stopListening(); unsubNotifs(); };
   }, [location.pathname]);

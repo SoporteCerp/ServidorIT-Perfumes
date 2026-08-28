@@ -4,6 +4,9 @@ import { getUserRole } from './authService';
 import { getToken, onMessage } from 'firebase/messaging';
 
 let unsubscribers = [];
+let shownOrderIds = new Set();
+let shownPaymentIds = new Set();
+let shownChatIds = new Set();
 
 export const requestNotificationPermission = async () => {
   try {
@@ -11,17 +14,12 @@ export const requestNotificationPermission = async () => {
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
         const token = await getToken(messaging, { vapidKey: 'YOUR_VAPID_KEY' });
-        if (token) {
-          await saveFCMToken(token);
-        }
+        if (token) await saveFCMToken(token);
         return true;
       }
     }
     return false;
-  } catch (err) {
-    console.log('Notification error:', err);
-    return false;
-  }
+  } catch (err) { return false; }
 };
 
 const saveFCMToken = async (token) => {
@@ -41,9 +39,8 @@ export const setupForegroundListener = () => {
   onMessage(messaging, (payload) => {
     const title = payload.notification.title || 'Esencia Gale';
     const body = payload.notification.body || 'Tienes una notificacion';
-
     if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(title, { body, icon: '/favicon.svg', badge: '/favicon.svg', tag: 'esencia-' + Date.now() });
+      new Notification(title, { body, icon: '/favicon.svg', tag: 'esencia-' + Date.now() });
     }
     showToast(title, body);
   });
@@ -52,7 +49,6 @@ export const setupForegroundListener = () => {
 export const showToast = (title, message) => {
   const existing = document.getElementById('toast-notification');
   if (existing) existing.remove();
-
   const toast = document.createElement('div');
   toast.id = 'toast-notification';
   toast.style.cssText = `
@@ -71,26 +67,36 @@ export const subscribeToNotifications = (callback) => {
   const user = auth.currentUser;
   if (!user) return () => {};
 
-  let count = 0;
-  const increment = () => { count++; callback(count); };
+  let initialized = { orders: false, payments: false, chat: false };
 
   const unsubNewOrders = onSnapshot(
     query(collection(db, 'orders'), where('status', '==', 'pendiente_confirmacion'), orderBy('createdAt', 'desc')),
-    (snapshot) => { snapshot.docChanges().forEach(c => { if (c.type === 'added') increment(); }); }
+    (snapshot) => {
+      if (!initialized.orders) { initialized.orders = true; return; }
+      snapshot.docChanges().forEach(c => {
+        if (c.type === 'added') callback(prev => prev + 1);
+      });
+    }
   );
 
   const unsubPendingPayments = onSnapshot(
     query(collection(db, 'orders'), where('paymentStatus', '==', 'pendiente'), orderBy('createdAt', 'desc')),
-    (snapshot) => { snapshot.docChanges().forEach(c => { if (c.type === 'added') increment(); }); }
+    (snapshot) => {
+      if (!initialized.payments) { initialized.payments = true; return; }
+      snapshot.docChanges().forEach(c => {
+        if (c.type === 'added') callback(prev => prev + 1);
+      });
+    }
   );
 
   const unsubChat = onSnapshot(
     query(collection(db, 'chats'), where('userId', '==', user.uid)),
     (snapshot) => {
+      if (!initialized.chat) { initialized.chat = true; return; }
       snapshot.docChanges().forEach(c => {
         if (c.type === 'modified') {
           const chat = c.doc.data();
-          if (chat.lastMessage && !chat.lastMessage.startsWith('Admin')) increment();
+          if (chat.lastMessage && !chat.lastMessage.startsWith('Admin')) callback(prev => prev + 1);
         }
       });
     }
@@ -116,13 +122,19 @@ export const startListening = async () => {
 export const stopListening = () => {
   unsubscribers.forEach(unsub => unsub());
   unsubscribers = [];
+  shownOrderIds.clear();
+  shownPaymentIds.clear();
+  shownChatIds.clear();
 };
 
 const listenNewOrders = () => {
+  let initialized = false;
   const q = query(collection(db, 'orders'), where('status', '==', 'pendiente_confirmacion'), orderBy('createdAt', 'desc'));
   const unsub = onSnapshot(q, (snapshot) => {
+    if (!initialized) { initialized = true; return; }
     snapshot.docChanges().forEach((change) => {
-      if (change.type === 'added') {
+      if (change.type === 'added' && !shownOrderIds.has(change.doc.id)) {
+        shownOrderIds.add(change.doc.id);
         const order = change.doc.data();
         showToast('Nuevo Pedido', `${order.customerName} - $${order.total}`);
       }
@@ -132,10 +144,13 @@ const listenNewOrders = () => {
 };
 
 const listenPendingPayments = () => {
+  let initialized = false;
   const q = query(collection(db, 'orders'), where('paymentStatus', '==', 'pendiente'));
   const unsub = onSnapshot(q, (snapshot) => {
+    if (!initialized) { initialized = true; return; }
     snapshot.docChanges().forEach((change) => {
-      if (change.type === 'added') {
+      if (change.type === 'modified' && !shownPaymentIds.has(change.doc.id)) {
+        shownPaymentIds.add(change.doc.id);
         const order = change.doc.data();
         showToast('Pago Pendiente', `${order.customerName} envio comprobante de $${order.total}`);
       }
@@ -145,10 +160,13 @@ const listenPendingPayments = () => {
 };
 
 const listenChatMessages = (userId) => {
+  let initialized = false;
   const q = query(collection(db, 'chats'), where('userId', '==', userId));
   const unsub = onSnapshot(q, (snapshot) => {
+    if (!initialized) { initialized = true; return; }
     snapshot.docChanges().forEach((change) => {
-      if (change.type === 'modified') {
+      if (change.type === 'modified' && !shownChatIds.has(change.doc.id)) {
+        shownChatIds.add(change.doc.id);
         const chat = change.doc.data();
         if (chat.lastMessage && !chat.lastMessage.startsWith('Admin')) {
           showToast('Nuevo Mensaje', chat.lastMessage);
