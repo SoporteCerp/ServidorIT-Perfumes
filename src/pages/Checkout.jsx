@@ -6,6 +6,7 @@ import { auth } from '../services/firebase';
 import { validateCoupon } from '../services/couponService';
 
 const YAPPY_NUMBER = '62686706';
+const WHATSAPP_NUMBER = '50767238540';
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -292,6 +293,16 @@ export default function Checkout() {
 
       <button className="btn btn-primary" onClick={handleOrder} disabled={loading}>
         {loading ? 'Procesando...' : 'Confirmar Pedido'}
+      </button>
+
+      <div style={{textAlign:'center',margin:'15px 0',color:'var(--gray-400)',fontSize:14}}>— o —</div>
+
+      <button className="btn" onClick={() => {
+        const items = cart.map(i => `• ${i.name} x${i.quantity} = $${(i.price * i.quantity).toFixed(2)}`).join('%0A');
+        const msg = `🛒 *Pedido Esencia Gale*%0A%0A${items}%0A%0A💰 *Total: $${finalTotal.toFixed(2)}*%0A%0A👤 ${name}%0A📞 ${phone}%0A📍 ${address}`;
+        window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, '_blank');
+      }} style={{background:'#25D366',color:'#fff'}}>
+        📱 Enviar Pedido por WhatsApp
       </button>
     </div>
   );

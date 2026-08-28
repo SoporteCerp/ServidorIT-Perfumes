@@ -135,6 +135,13 @@ export default function ProductDetail() {
               {added ? '✓ Agregado' : `Agregar al carrito - $${(product.price * qty).toFixed(2)}`}
             </button>
 
+            <button className="btn" onClick={() => {
+              const msg = `🛒 *Pedido*%0A%0A• ${product.name} x${qty}%0A💰 Total: $${(product.price * qty).toFixed(2)}`;
+              window.open(`https://wa.me/50767238540?text=${msg}`, '_blank');
+            }} style={{background:'#25D366',color:'#fff',marginTop:8}}>
+              📱 Comprar por WhatsApp
+            </button>
+
             <p style={{textAlign:'center',fontSize:13,color:'var(--gray-400)',marginTop:10}}>
               Stock disponible: {product.stock}
             </p>
