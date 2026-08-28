@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCart, getCartTotal, clearCart } from '../services/cartService';
 import { addDocument } from '../services/firestoreService';
 import { auth } from '../services/firebase';
-import { sendInvoice } from '../services/emailService';
 
 const YAPPY_NUMBER = '62686706';
 
 export default function Checkout() {
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
   const [cart, setCart] = useState([]);
   const [total, setTotal] = useState(0);
   const [name, setName] = useState(auth.currentUser?.displayName || '');
@@ -17,6 +17,12 @@ export default function Checkout() {
   const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState('form');
+  const [orderId, setOrderId] = useState(null);
+
+  const [screenshot, setScreenshot] = useState(null);
+  const [screenshotPreview, setScreenshotPreview] = useState(null);
+  const [reference, setReference] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     const c = getCart();
@@ -24,6 +30,18 @@ export default function Checkout() {
     setCart(c);
     setTotal(getCartTotal());
   }, []);
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 800000) { alert('La imagen es muy grande. Maximo 800KB.'); return; }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setScreenshot(ev.target.result);
+      setScreenshotPreview(ev.target.result);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleOrder = async () => {
     if (!name || !phone || !address) { alert('Completa todos los campos'); return; }
@@ -38,52 +56,132 @@ export default function Checkout() {
         customerAddress: address,
         paymentMethod: 'yappy',
         paymentStatus: 'pendiente',
-        status: 'pendiente',
+        status: 'pendiente_confirmacion',
+        screenshot: null,
+        reference: '',
         userId: auth.currentUser.uid
       });
-
-      if (email) {
-        await sendInvoice({
-          customerName: name,
-          customerEmail: email,
-          orderId: docRef,
-          items: cart.map(i => ({ name: i.name, brand: i.brand, price: i.price, quantity: i.quantity })),
-          total
-        });
-      }
-
+      setOrderId(docRef);
       clearCart();
       setStep('yappy');
     } catch (e) { alert('Error al crear pedido'); }
     finally { setLoading(false); }
   };
 
+  const handleConfirmPayment = async () => {
+    if (!screenshot) { alert('Sube el comprobante de pago'); return; }
+    if (!reference.trim()) { alert('Escribe el numero de referencia'); return; }
+    setUploading(true);
+    try {
+      const { updateDocument } = await import('../services/firestoreService');
+      await updateDocument('orders', orderId, {
+        screenshot,
+        reference: reference.trim(),
+        status: 'pendiente_confirmacion'
+      });
+      setStep('done');
+    } catch (e) { alert('Error al subir comprobante'); }
+    finally { setUploading(false); }
+  };
+
+  if (step === 'done') {
+    return (
+      <div style={{padding:20,textAlign:'center'}}>
+        <div style={{fontSize:60,marginBottom:15}}>✅</div>
+        <h2 className="section-title">Comprobante Enviado</h2>
+        <p style={{color:'var(--gray-500)',margin:'15px 0',lineHeight:1.6}}>
+          Tu comprobante esta siendo revisado.<br/>
+          Te confirmaremos por email cuando se verifique el pago.
+        </p>
+        <div className="card" style={{textAlign:'left',margin:'20px 0'}}>
+          <p style={{fontSize:13,color:'var(--gray-400)'}}>Numero de pedido</p>
+          <p style={{fontWeight:700,fontSize:16}}>{orderId?.slice(0,8).toUpperCase()}</p>
+          <p style={{fontSize:13,color:'var(--gray-400)',marginTop:10}}>Referencia Yappy</p>
+          <p style={{fontWeight:700,fontSize:16}}>{reference}</p>
+          <p style={{fontSize:13,color:'var(--gray-400)',marginTop:10}}>Total</p>
+          <p style={{fontWeight:700,fontSize:20,color:'var(--primary-dark)'}}>${total.toFixed(2)}</p>
+        </div>
+        <button className="btn btn-primary" onClick={() => navigate('/orders')}>Ver Mis Pedidos</button>
+        <button className="btn btn-outline" style={{marginTop:10}} onClick={() => navigate('/')}>Volver al Catalogo</button>
+      </div>
+    );
+  }
+
   if (step === 'yappy') {
     return (
-      <div style={{padding:20}}>
+      <div style={{padding:15}}>
         <h2 className="section-title mb-15 text-center">Paso 2: Paga con Yappy</h2>
         <div className="yappy-box">
           <div className="yappy-title">Numero de Yappy</div>
           <div className="yappy-number">{YAPPY_NUMBER}</div>
           <div className="yappy-instruction">
-            Abre tu app Yappy y envia <strong>${total.toFixed(2)}</strong> al numero de arriba.<br/><br/>
-            Despues de pagar, tu pedido sera procesado.
+            Abre tu app Yappy y envia <strong>${total.toFixed(2)}</strong> al numero de arriba.
           </div>
         </div>
-        <div className="card" style={{textAlign:'center'}}>
-          <p style={{fontSize:14,color:'var(--gray-500)',marginBottom:15}}>Monto a enviar:</p>
-          <p style={{fontSize:32,fontWeight:700,color:'var(--primary-dark)'}}>${total.toFixed(2)}</p>
-          <p style={{fontSize:12,color:'var(--gray-400)',marginTop:10}}>Yappy a: {YAPPY_NUMBER}</p>
-        </div>
-        {email && (
-          <div className="card" style={{marginTop:10,textAlign:'center'}}>
-            <p style={{fontSize:13,color:'var(--gray-500)'}}>📧 La factura fue enviada a:</p>
-            <p style={{fontWeight:600,color:'var(--primary-dark)'}}>{email}</p>
+
+        <div className="card">
+          <h3 style={{fontSize:16,fontWeight:700,marginBottom:15}}>Sube tu comprobante</h3>
+          
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept="image/*"
+            onChange={handleImageChange}
+            style={{display:'none'}}
+          />
+
+          <div 
+            style={{
+              border:'2px dashed var(--gray-300)',
+              borderRadius:12,
+              padding:20,
+              textAlign:'center',
+              cursor:'pointer',
+              marginBottom:15,
+              background: screenshotPreview ? '#fff' : 'var(--gray-50)'
+            }}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {screenshotPreview ? (
+              <img src={screenshotPreview} alt="Comprobante" style={{maxWidth:'100%',maxHeight:200,borderRadius:8}} />
+            ) : (
+              <>
+                <div style={{fontSize:40,marginBottom:10}}>📸</div>
+                <p style={{color:'var(--gray-500)',fontSize:14}}>Toca para subir screenshot del comprobante</p>
+              </>
+            )}
           </div>
-        )}
-        <button className="btn btn-success" style={{marginTop:15}} onClick={() => { navigate('/orders'); }}>
-          ✓ Ya Pague
-        </button>
+
+          {screenshot && (
+            <button 
+              className="btn btn-outline btn-sm" 
+              style={{marginBottom:15,width:'auto'}}
+              onClick={() => { setScreenshot(null); setScreenshotPreview(null); }}
+            >
+              Cambiar imagen
+            </button>
+          )}
+
+          <div className="form-group">
+            <label style={{fontSize:14,fontWeight:600,display:'block',marginBottom:6}}>Numero de referencia Yappy *</label>
+            <input 
+              className="form-input" 
+              placeholder="Ej: 123456789" 
+              value={reference} 
+              onChange={e => setReference(e.target.value)} 
+            />
+          </div>
+
+          <button 
+            className="btn btn-success" 
+            onClick={handleConfirmPayment}
+            disabled={uploading || !screenshot || !reference.trim()}
+            style={{opacity: (!screenshot || !reference.trim()) ? 0.5 : 1}}
+          >
+            {uploading ? 'Enviando...' : '✓ Enviar Comprobante'}
+          </button>
+        </div>
+
         <button className="btn btn-outline" style={{marginTop:10}} onClick={() => navigate('/')}>
           Volver al Catalogo
         </button>
