@@ -560,3 +560,12 @@ body {
 .dark-mode .admin-brand { color: #aaa !important; }
 .dark-mode .detail-desc { color: #bbb !important; }
 .dark-mode .cart-total { background: #16213e !important; }
+
+@keyframes slideDown {
+  from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+  to { transform: translateX(-50%) translateY(0); opacity: 1; }
+}
+
+#toast-notification {
+  animation: slideDown 0.3s ease;
+}

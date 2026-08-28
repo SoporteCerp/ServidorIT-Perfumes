@@ -3,7 +3,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { auth } from '../services/firebase';
 import { logoutUser, getUserRole } from '../services/authService';
 import { getCartCount } from '../services/cartService';
-import { startListening, stopListening, requestNotificationPermission } from '../services/notificationService';
+import { startListening, stopListening, requestNotificationPermission, setupForegroundListener } from '../services/notificationService';
 
 const customerNav = [
   { path: '/', icon: '🛍️', label: 'Catalogo' },
@@ -30,6 +30,7 @@ export default function Layout() {
     loadRole();
     setCartCount(getCartCount());
     requestNotificationPermission();
+    setupForegroundListener();
     startListening();
     return () => stopListening();
   }, [location.pathname]);
