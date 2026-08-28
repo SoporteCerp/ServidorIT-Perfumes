@@ -136,7 +136,24 @@ export default function ProductDetail() {
             </button>
 
             <button className="btn" onClick={() => {
-              const msg = encodeURIComponent(`Pedido Esencia Gale\n\n*${product.name}*\nCantidad: ${qty}\nPrecio: $${product.price.toFixed(2)} c/u\n\nTotal: $${(product.price * qty).toFixed(2)}`);
+              const date = new Date().toLocaleDateString('es-PA');
+              const divider = '--------------------';
+              const msg = encodeURIComponent(
+`*ESENCIA GALE*
+Tu tienda de fragancias
+Tel: 50767238540
+${divider}
+PEDIDO RAPIDO
+Fecha: ${date}
+${divider}
+
+${product.name}
+  ${qty} x $${product.price.toFixed(2)}    $${(product.price * qty).toFixed(2)}
+
+${divider}
+*TOTAL: $${(product.price * qty).toFixed(2)}*
+${divider}
+Para coordinar entrega enviar comprobante de pago`);
               window.open(`https://wa.me/50767238540?text=${msg}`, '_blank');
             }} style={{background:'#25D366',color:'#fff',marginTop:8}}>
               Comprar por WhatsApp

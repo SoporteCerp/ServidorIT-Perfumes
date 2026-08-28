@@ -298,8 +298,31 @@ export default function Checkout() {
       <div style={{textAlign:'center',margin:'15px 0',color:'var(--gray-400)',fontSize:14}}>— o —</div>
 
       <button className="btn" onClick={() => {
-        const items = cart.map(i => `- ${i.name} x${i.quantity} = $${(i.price * i.quantity).toFixed(2)}`).join('\n');
-        const msg = encodeURIComponent(`Pedido Esencia Gale\n\n${items}\n\nTotal: $${finalTotal.toFixed(2)}\n\nNombre: ${name}\nTelefono: ${phone}\nDireccion: ${address}`);
+        const date = new Date().toLocaleDateString('es-PA');
+        const items = cart.map(i => `${i.name}\n  ${i.quantity} x $${i.price.toFixed(2)}    $${(i.price * i.quantity).toFixed(2)}`).join('\n');
+        const divider = '--------------------';
+        const msg = encodeURIComponent(
+`*ESENCIA GALE*
+Tu tienda de fragancias
+Tel: ${WHATSAPP_NUMBER}
+${divider}
+FACTURA DE PEDIDO
+Fecha: ${date}
+${divider}
+
+${items}
+
+${divider}
+*TOTAL: $${finalTotal.toFixed(2)}*
+${divider}
+
+DATOS DEL CLIENTE:
+Nombre: ${name}
+Telefono: ${phone}
+Direccion: ${address}
+${divider}
+Gracias por tu compra!
+Para coordinar entrega enviar comprobante de pago`);
         window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, '_blank');
       }} style={{background:'#25D366',color:'#fff'}}>
         Enviar Pedido por WhatsApp
