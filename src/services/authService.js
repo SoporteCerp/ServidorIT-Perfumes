@@ -21,6 +21,18 @@ export const registerUser = async (email, password, name) => {
 
 export const loginUser = async (email, password) => {
   const cred = await signInWithEmailAndPassword(auth, email, password);
+  
+  const users = await getDocuments('users', [{ field: 'uid', operator: '==', value: cred.user.uid }]);
+  if (users.length === 0) {
+    const role = email.toLowerCase() === ADMIN_EMAIL ? 'admin' : 'customer';
+    await addDocument('users', {
+      uid: cred.user.uid,
+      email: email.toLowerCase(),
+      name: cred.user.displayName || '',
+      role
+    });
+  }
+
   return cred.user;
 };
 
