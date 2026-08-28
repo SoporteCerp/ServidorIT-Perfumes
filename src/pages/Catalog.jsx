@@ -11,8 +11,8 @@ export default function Catalog() {
   useEffect(() => { loadProducts(); }, []);
 
   const loadProducts = async () => {
-    const data = await getDocuments('products', [{ field: 'active', operator: '==', value: true }], 'name', 'asc');
-    setProducts(data);
+    const data = await getDocuments('products', [], 'name', 'asc');
+    setProducts(data.filter(p => p.active === true));
   };
 
   const filtered = products.filter(p => {

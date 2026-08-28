@@ -15,9 +15,13 @@ export const deleteDocument = async (col, id) => {
 };
 
 export const getDocuments = async (col, filters = [], orderByField = 'createdAt', orderDir = 'desc', limitCount = 100) => {
-  let q = collection(db, col);
-  filters.forEach(f => { q = query(q, where(f.field, f.operator, f.value)); });
-  q = query(q, orderBy(orderByField, orderDir), limit(limitCount));
+  let q;
+  if (filters.length > 0) {
+    q = collection(db, col);
+    filters.forEach(f => { q = query(q, where(f.field, f.operator, f.value)); });
+  } else {
+    q = query(collection(db, col), orderBy(orderByField, orderDir), limit(limitCount));
+  }
   const snap = await getDocs(q);
   return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 };

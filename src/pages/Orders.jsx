@@ -8,8 +8,8 @@ export default function Orders() {
   useEffect(() => { loadOrders(); }, []);
 
   const loadOrders = async () => {
-    const all = await getDocuments('orders', [{ field: 'userId', operator: '==', value: auth.currentUser.uid }], 'createdAt', 'desc');
-    setOrders(all);
+    const all = await getDocuments('orders', [], 'createdAt', 'desc');
+    setOrders(all.filter(o => o.userId === auth.currentUser.uid));
   };
 
   const statusColors = { pendiente: '#F59E0B', procesando: '#3B82F6', entregado: '#10B981' };
