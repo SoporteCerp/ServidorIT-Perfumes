@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { auth } from '../services/firebase';
 import { getUserRole } from '../services/authService';
-import { getOrCreateChat, sendMessage, getMessages, getUserChats, updateChatLastMessage } from '../services/chatService';
+import { getOrCreateChat, sendMessage, subscribeToMessages, subscribeToChats, updateChatLastMessage } from '../services/chatService';
 
 export default function Chat() {
   const [messages, setMessages] = useState([]);
@@ -13,27 +13,29 @@ export default function Chat() {
   const [loading, setLoading] = useState(false);
   const messagesEnd = useRef(null);
 
-  useEffect(() => { init(); }, []);
+  useEffect(() => { init(); return () => {}; }, []);
 
   const init = async () => {
     const r = await getUserRole(auth.currentUser.uid);
     setRole(r);
     if (r === 'admin') {
-      const c = await getUserChats();
-      setChats(c);
+      const unsub = subscribeToChats(setChats);
+      return unsub;
     } else {
       const id = await getOrCreateChat(auth.currentUser.uid, auth.currentUser.displayName || 'Cliente');
       setChatId(id);
       setSelectedChat(id);
-      loadMessages(id);
     }
   };
 
-  const loadMessages = async (id) => {
-    const msgs = await getMessages(id);
-    setMessages(msgs);
-    setTimeout(() => messagesEnd.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-  };
+  useEffect(() => {
+    if (!selectedChat) return;
+    const unsub = subscribeToMessages(selectedChat, (msgs) => {
+      setMessages(msgs);
+      setTimeout(() => messagesEnd.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    });
+    return unsub;
+  }, [selectedChat]);
 
   const handleSend = async () => {
     if (!newMessage.trim() || !selectedChat) return;
@@ -42,14 +44,11 @@ export default function Chat() {
     await sendMessage(selectedChat, auth.currentUser.uid, senderName, newMessage.trim());
     await updateChatLastMessage(selectedChat, newMessage.trim());
     setNewMessage('');
-    await loadMessages(selectedChat);
     setLoading(false);
   };
 
   const selectChat = (chat) => {
     setSelectedChat(chat.id);
-    setChatId(chat.id);
-    loadMessages(chat.id);
   };
 
   if (role === 'admin' && !selectedChat) {
@@ -72,7 +71,7 @@ export default function Chat() {
     <div style={{display:'flex',flexDirection:'column',height:'calc(100vh - 180px)'}}>
       {role === 'admin' && (
         <button className="btn btn-outline btn-sm" style={{marginBottom:10,width:'auto'}} onClick={() => setSelectedChat(null)}>
-          ← Volver a lista
+          Volver a lista
         </button>
       )}
       
@@ -105,7 +104,7 @@ export default function Chat() {
           style={{flex:1,marginBottom:0}}
         />
         <button className="btn btn-primary" style={{width:'auto',padding:'0 20px',marginBottom:0}} onClick={handleSend} disabled={loading || !newMessage.trim()}>
-          📤
+          Enviar
         </button>
       </div>
     </div>
