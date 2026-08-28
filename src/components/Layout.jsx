@@ -64,15 +64,14 @@ export default function Layout() {
             <div className="header-date">{new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
           </div>
           <div className="header-actions">
-            <button className="icon-btn" onClick={() => { setNotifCount(0); navigate('/notifications'); }}>
-              🔔
-              {notifCount > 0 && <span className="cart-badge">{notifCount}</span>}
-            </button>
             <button className="icon-btn" onClick={() => navigate('/cart')}>
               🛒
               {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
             </button>
-            <button className="icon-btn" onClick={() => navigate('/chat')}>💬</button>
+            <button className="icon-btn" onClick={() => { setNotifCount(0); navigate('/chat'); }}>
+              💬
+              {notifCount > 0 && <span className="cart-badge">{notifCount}</span>}
+            </button>
             <button className="icon-btn" onClick={() => navigate('/profile')}>👤</button>
             <button className="icon-btn" onClick={handleLogout}>🚪</button>
           </div>
