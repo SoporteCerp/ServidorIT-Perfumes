@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { auth } from '../services/firebase';
+import { auth, db } from '../services/firebase';
 import { logoutUser, getUserRole } from '../services/authService';
 import { getCartCount } from '../services/cartService';
-import { startListening, stopListening, requestNotificationPermission, setupForegroundListener } from '../services/notificationService';
+import { startListening, stopListening, requestNotificationPermission, setupForegroundListener, subscribeToNotifications } from '../services/notificationService';
 
 const customerNav = [
   { path: '/', icon: '🛍️', label: 'Catalogo' },
@@ -25,15 +25,21 @@ export default function Layout() {
   const user = auth.currentUser;
   const [cartCount, setCartCount] = useState(0);
   const [role, setRole] = useState('customer');
+  const [notifCount, setNotifCount] = useState(0);
 
   useEffect(() => {
     loadRole();
     setCartCount(getCartCount());
     requestNotificationPermission();
     setupForegroundListener();
+    const unsubNotifs = subscribeToNotifications(setNotifCount);
     startListening();
-    return () => stopListening();
+    return () => { stopListening(); unsubNotifs(); };
   }, [location.pathname]);
+
+  useEffect(() => {
+    document.title = notifCount > 0 ? `(${notifCount}) Esencia Gale` : 'Esencia Gale';
+  }, [notifCount]);
 
   const loadRole = async () => {
     try {
@@ -58,14 +64,15 @@ export default function Layout() {
             <div className="header-date">{new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
           </div>
           <div className="header-actions">
+            <button className="icon-btn" onClick={() => { setNotifCount(0); navigate('/notifications'); }}>
+              🔔
+              {notifCount > 0 && <span className="cart-badge">{notifCount}</span>}
+            </button>
             <button className="icon-btn" onClick={() => navigate('/cart')}>
               🛒
               {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
             </button>
             <button className="icon-btn" onClick={() => navigate('/chat')}>💬</button>
-            <button className="icon-btn" onClick={() => navigate('/stores')}>🏪</button>
-            {role === 'admin' && <button className="icon-btn" onClick={() => navigate('/reports')}>📈</button>}
-            {role === 'admin' && <button className="icon-btn" onClick={() => navigate('/coupons')}>🏷️</button>}
             <button className="icon-btn" onClick={() => navigate('/profile')}>👤</button>
             <button className="icon-btn" onClick={handleLogout}>🚪</button>
           </div>

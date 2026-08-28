@@ -17,6 +17,7 @@ import AdminCoupons from './pages/AdminCoupons';
 import Chat from './pages/Chat';
 import Reports from './pages/Reports';
 import StoreLocations from './pages/StoreLocations';
+import Notifications from './pages/Notifications';
 import './App.css';
 
 function App() {
@@ -53,6 +54,7 @@ function App() {
             <Route path="/chat" element={<Chat />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/stores" element={<StoreLocations />} />
+            <Route path="/notifications" element={<Notifications />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Route>
         )}

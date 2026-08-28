@@ -1,4 +1,4 @@
-import { collection, onSnapshot, query, where, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, orderBy, addDoc, getDocs, updateDoc } from 'firebase/firestore';
 import { db, auth, messaging } from './firebase';
 import { getUserRole } from './authService';
 import { getToken, onMessage } from 'firebase/messaging';
@@ -12,34 +12,40 @@ export const requestNotificationPermission = async () => {
       if (permission === 'granted') {
         const token = await getToken(messaging, { vapidKey: 'YOUR_VAPID_KEY' });
         if (token) {
-          console.log('FCM Token:', token);
+          await saveFCMToken(token);
         }
         return true;
       }
     }
     return false;
   } catch (err) {
-    console.log('Notification permission error:', err);
+    console.log('Notification error:', err);
     return false;
   }
 };
 
+const saveFCMToken = async (token) => {
+  try {
+    const user = auth.currentUser;
+    if (!user) return;
+    const tokens = await getDocs(query(collection(db, 'fcmTokens'), where('userId', '==', user.uid)));
+    if (tokens.empty) {
+      await addDoc(collection(db, 'fcmTokens'), { userId: user.uid, token, createdAt: new Date() });
+    } else {
+      await updateDoc(tokens.docs[0].ref, { token, updatedAt: new Date() });
+    }
+  } catch (err) {}
+};
+
 export const setupForegroundListener = () => {
   onMessage(messaging, (payload) => {
-    const notificationTitle = payload.notification.title || 'Esencia Gale';
-    const notificationOptions = {
-      body: payload.notification.body || 'Tienes una notificacion',
-      icon: '/favicon.svg',
-      badge: '/favicon.svg',
-      tag: 'esencia-notification',
-      requireInteraction: true
-    };
+    const title = payload.notification.title || 'Esencia Gale';
+    const body = payload.notification.body || 'Tienes una notificacion';
 
     if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(notificationTitle, notificationOptions);
+      new Notification(title, { body, icon: '/favicon.svg', badge: '/favicon.svg', tag: 'esencia-' + Date.now() });
     }
-
-    showToast(notificationTitle, notificationOptions.body);
+    showToast(title, body);
   });
 };
 
@@ -59,6 +65,38 @@ export const showToast = (title, message) => {
   toast.onclick = () => toast.remove();
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 5000);
+};
+
+export const subscribeToNotifications = (callback) => {
+  const user = auth.currentUser;
+  if (!user) return () => {};
+
+  let count = 0;
+  const increment = () => { count++; callback(count); };
+
+  const unsubNewOrders = onSnapshot(
+    query(collection(db, 'orders'), where('status', '==', 'pendiente_confirmacion'), orderBy('createdAt', 'desc')),
+    (snapshot) => { snapshot.docChanges().forEach(c => { if (c.type === 'added') increment(); }); }
+  );
+
+  const unsubPendingPayments = onSnapshot(
+    query(collection(db, 'orders'), where('paymentStatus', '==', 'pendiente'), orderBy('createdAt', 'desc')),
+    (snapshot) => { snapshot.docChanges().forEach(c => { if (c.type === 'added') increment(); }); }
+  );
+
+  const unsubChat = onSnapshot(
+    query(collection(db, 'chats'), where('userId', '==', user.uid)),
+    (snapshot) => {
+      snapshot.docChanges().forEach(c => {
+        if (c.type === 'modified') {
+          const chat = c.doc.data();
+          if (chat.lastMessage && !chat.lastMessage.startsWith('Admin')) increment();
+        }
+      });
+    }
+  );
+
+  return () => { unsubNewOrders(); unsubPendingPayments(); unsubChat(); };
 };
 
 export const startListening = async () => {
