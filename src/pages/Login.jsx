@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { loginUser } from '../services/authService';
+import { loginUser, resetPassword } from '../services/authService';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -8,6 +8,8 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [resetSent, setResetSent] = useState(false);
+  const [showReset, setShowReset] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -18,12 +20,66 @@ export default function Login() {
     finally { setLoading(false); }
   };
 
+  const handleReset = async () => {
+    if (!email) { setError('Escribe tu email primero'); return; }
+    setLoading(true); setError('');
+    try {
+      await resetPassword(email);
+      setResetSent(true);
+    } catch (err) {
+      setError('Error: ' + (err.message || 'Intenta de nuevo'));
+    } finally { setLoading(false); }
+  };
+
+  if (showReset) {
+    return (
+      <div className="login-page">
+        <div className="login-box">
+          <div className="login-header">
+            <div className="login-logo">📧</div>
+            <h1 className="login-title">Recuperar Contrasena</h1>
+            <p className="login-subtitle">Te enviaremos un link para crear una nueva contrasena</p>
+          </div>
+
+          {resetSent ? (
+            <>
+              <div style={{textAlign:'center',padding:'20px 0'}}>
+                <div style={{fontSize:50,marginBottom:15}}>✅</div>
+                <p style={{color:'var(--gray-700)',fontSize:16,fontWeight:500}}>Email enviado!</p>
+                <p style={{color:'var(--gray-500)',fontSize:14,marginTop:8}}>Revisa tu bandeja de entrada en <strong>{email}</strong></p>
+              </div>
+              <button className="btn btn-primary" onClick={() => { setShowReset(false); setResetSent(false); }}>
+                Volver al Login
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="form-group">
+                <input className="form-input" type="email" placeholder="Tu email" value={email} onChange={e => setEmail(e.target.value)} />
+              </div>
+              {error && <p style={{color:'var(--danger)',textAlign:'center',marginBottom:15}}>{error}</p>}
+              <button className="btn btn-primary" onClick={handleReset} disabled={loading}>
+                {loading ? 'Enviando...' : 'Enviar Link de Recuperacion'}
+              </button>
+            </>
+          )}
+
+          <div className="text-center" style={{marginTop:15}}>
+            <button className="btn-link" onClick={() => { setShowReset(false); setResetSent(false); setError(''); }}>
+              Volver al Login
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="login-page">
       <div className="login-box">
         <div className="login-header">
           <div className="login-logo">🧴</div>
-          <h1 className="login-title">Perfumeria</h1>
+          <h1 className="login-title">Esencia Gale</h1>
           <p className="login-subtitle">Las mejores fragancias</p>
         </div>
         <form onSubmit={handleSubmit}>
@@ -38,7 +94,10 @@ export default function Login() {
             {loading ? 'Ingresando...' : 'Iniciar Sesion'}
           </button>
         </form>
-        <div className="text-center" style={{marginTop:15}}>
+        <div className="text-center" style={{marginTop:10}}>
+          <button className="btn-link" onClick={() => setShowReset(true)}>Olvidaste tu contrasena?</button>
+        </div>
+        <div className="text-center" style={{marginTop:5}}>
           <button className="btn-link" onClick={() => navigate('/register')}>No tienes cuenta? Registrate</button>
         </div>
       </div>

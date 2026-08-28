@@ -1,4 +1,4 @@
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from './firebase';
 import { addDocument, getDocuments } from './firestoreService';
 
@@ -27,6 +27,10 @@ export const loginUser = async (email, password) => {
 export const getUserRole = async (uid) => {
   const users = await getDocuments('users', [{ field: 'uid', operator: '==', value: uid }]);
   return users.length > 0 ? users[0].role : 'customer';
+};
+
+export const resetPassword = async (email) => {
+  await sendPasswordResetEmail(auth, email);
 };
 
 export const logoutUser = async () => {
