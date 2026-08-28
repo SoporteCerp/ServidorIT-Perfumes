@@ -8,6 +8,7 @@ export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
+  const [similar, setSimilar] = useState([]);
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
   const [favorited, setFavorited] = useState(false);
@@ -19,6 +20,10 @@ export default function ProductDetail() {
     const p = all.find(p => p.id === id);
     setProduct(p);
     setFavorited(isInWishlist(id));
+    if (p) {
+      const sims = all.filter(x => x.id !== id && x.active && (x.category === p.category || x.brand === p.brand)).slice(0, 4);
+      setSimilar(sims);
+    }
   };
 
   const handleAdd = () => {
@@ -32,25 +37,50 @@ export default function ProductDetail() {
     setFavorited(!favorited);
   };
 
+  const handleShare = () => {
+    const text = `🧴 ${product.name}\nMarca: ${product.brand}\nPrecio: $${product.price}\n\n¡Mira este perfume en Esencia Gale!`;
+    if (navigator.share) {
+      navigator.share({ title: product.name, text });
+    } else {
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    }
+  };
+
   if (!product) return <div className="empty-state"><div className="empty-icon">⏳</div></div>;
+
+  const descLines = product.description ? product.description.split('\n').filter(l => l.trim()) : [];
 
   return (
     <>
       <div className="detail-image" style={{position:'relative'}}>
         {product.image ? <img src={product.image} alt={product.name} style={{width:'100%',height:'100%',objectFit:'cover'}} /> : '🧴'}
-        <button onClick={handleFavorite} style={{
-          position:'absolute', top:15, right:15, width:44, height:44, borderRadius:'50%',
-          background:'#fff', border:'none', fontSize:22, cursor:'pointer',
-          boxShadow:'0 2px 8px rgba(0,0,0,0.15)', display:'flex', alignItems:'center', justifyContent:'center'
-        }}>
-          {favorited ? '❤️' : '🤍'}
-        </button>
+        <div style={{position:'absolute',top:15,right:15,display:'flex',gap:8}}>
+          <button onClick={handleFavorite} style={{
+            width:44, height:44, borderRadius:'50%', background:'#fff', border:'none',
+            fontSize:22, cursor:'pointer', boxShadow:'0 2px 8px rgba(0,0,0,0.15)',
+            display:'flex', alignItems:'center', justifyContent:'center'
+          }}>
+            {favorited ? '❤️' : '🤍'}
+          </button>
+          <button onClick={handleShare} style={{
+            width:44, height:44, borderRadius:'50%', background:'#fff', border:'none',
+            fontSize:22, cursor:'pointer', boxShadow:'0 2px 8px rgba(0,0,0,0.15)',
+            display:'flex', alignItems:'center', justifyContent:'center'
+          }}>
+            📤
+          </button>
+        </div>
       </div>
       <div className="detail-info">
         <div className="detail-brand">{product.brand}</div>
         <div className="detail-name">{product.name}</div>
         <div className="detail-price">${product.price}</div>
-        <div className="detail-desc">{product.description || 'Fragancia exclusiva de alta calidad.'}</div>
+        
+        <div className="detail-desc">
+          {descLines.length > 0 ? descLines.map((line, i) => (
+            <React.Fragment key={i}>{line}<br/></React.Fragment>
+          )) : 'Fragancia exclusiva de alta calidad.'}
+        </div>
 
         {product.stock > 0 ? (
           <>
@@ -70,6 +100,29 @@ export default function ProductDetail() {
           </>
         ) : (
           <button className="btn btn-outline" disabled>Agotado</button>
+        )}
+
+        {similar.length > 0 && (
+          <div style={{marginTop:25}}>
+            <div className="section-title">Productos similares</div>
+            <div style={{display:'flex',gap:10,overflowX:'auto',paddingBottom:5}}>
+              {similar.map(s => (
+                <div key={s.id} onClick={() => navigate(`/product/${s.id}`)} style={{
+                  minWidth:120, background:'#fff', borderRadius:10, overflow:'hidden',
+                  boxShadow:'0 2px 6px rgba(0,0,0,0.08)', cursor:'pointer', flexShrink:0
+                }}>
+                  <div style={{width:120,height:100,background:'linear-gradient(135deg, #f3e8ff, #fce7f3)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:35}}>
+                    {s.image ? <img src={s.image} alt={s.name} style={{width:'100%',height:'100%',objectFit:'cover'}} /> : '🧴'}
+                  </div>
+                  <div style={{padding:8}}>
+                    <div style={{fontSize:11,fontWeight:600,color:'var(--primary)'}}>{s.brand}</div>
+                    <div style={{fontSize:12,fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{s.name}</div>
+                    <div style={{fontSize:14,fontWeight:700,color:'var(--primary-dark)'}}>${s.price}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </div>
     </>

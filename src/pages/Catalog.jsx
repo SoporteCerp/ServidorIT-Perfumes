@@ -11,6 +11,9 @@ export default function Catalog() {
   const [filter, setFilter] = useState('todos');
   const [recentOrders, setRecentOrders] = useState([]);
   const [favIds, setFavIds] = useState([]);
+  const [priceRange, setPriceRange] = useState([0, 500]);
+  const [showFilters, setShowFilters] = useState(false);
+  const [listening, setListening] = useState(false);
 
   useEffect(() => { loadProducts(); loadRecentOrders(); loadFavorites(); }, []);
 
@@ -38,11 +41,29 @@ export default function Catalog() {
     loadFavorites();
   };
 
+  const startVoiceSearch = () => {
+    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      alert('Tu navegador no soporta busqueda por voz');
+      return;
+    }
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'es-PA';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.onstart = () => setListening(true);
+    recognition.onresult = (e) => { setSearch(e.results[0][0].transcript); setListening(false); };
+    recognition.onerror = () => setListening(false);
+    recognition.onend = () => setListening(false);
+    recognition.start();
+  };
+
   const offers = products.filter(p => p.category === 'ofertas');
   const filtered = products.filter(p => {
     const matchSearch = p.name?.toLowerCase().includes(search.toLowerCase()) || p.brand?.toLowerCase().includes(search.toLowerCase());
     const matchFilter = filter === 'todos' || p.category === filter;
-    return matchSearch && matchFilter;
+    const matchPrice = p.price >= priceRange[0] && p.price <= priceRange[1];
+    return matchSearch && matchFilter && matchPrice;
   });
 
   const statusConfig = {
@@ -91,7 +112,37 @@ export default function Catalog() {
         </div>
       )}
 
-      <input className="search-bar" placeholder="Buscar perfume..." value={search} onChange={e => setSearch(e.target.value)} />
+      <div style={{display:'flex',gap:8,marginBottom:12}}>
+        <div style={{flex:1,position:'relative'}}>
+          <input className="search-bar" placeholder="Buscar perfume..." value={search} onChange={e => setSearch(e.target.value)} style={{marginBottom:0}} />
+          <button onClick={startVoiceSearch} style={{
+            position:'absolute', right:10, top:'50%', transform:'translateY(-50%)',
+            background:'none', border:'none', fontSize:20, cursor:'pointer', padding:5
+          }}>
+            {listening ? '🔴' : '🎤'}
+          </button>
+        </div>
+        <button onClick={() => setShowFilters(!showFilters)} style={{
+          background: showFilters ? 'var(--primary)' : 'var(--gray-100)',
+          color: showFilters ? '#fff' : 'var(--gray-700)',
+          border:'none', borderRadius:12, padding:'0 14px', fontSize:20, cursor:'pointer'
+        }}>
+          ⚙️
+        </button>
+      </div>
+
+      {showFilters && (
+        <div style={{background:'#fff',borderRadius:12,padding:16,marginBottom:12,boxShadow:'0 2px 8px rgba(0,0,0,0.06)'}}>
+          <div style={{fontSize:14,fontWeight:600,marginBottom:10}}>Rango de precio: ${priceRange[0]} - ${priceRange[1]}</div>
+          <div style={{display:'flex',gap:10,alignItems:'center'}}>
+            <span style={{fontSize:12,color:'var(--gray-400)'}}>$0</span>
+            <input type="range" min="0" max="500" value={priceRange[0]} onChange={e => setPriceRange([parseInt(e.target.value), priceRange[1]])} style={{flex:1}} />
+            <input type="range" min="0" max="500" value={priceRange[1]} onChange={e => setPriceRange([priceRange[0], parseInt(e.target.value)])} style={{flex:1}} />
+            <span style={{fontSize:12,color:'var(--gray-400)'}}>$500</span>
+          </div>
+        </div>
+      )}
+
       <div className="filter-row">
         {[{v:'todos',l:'Todos'},{v:'hombre',l:'Hombre'},{v:'mujer',l:'Mujer'},{v:'unisex',l:'Unisex'},{v:'nuevos',l:'Nuevos'},{v:'importados',l:'Importados'}].map(f => (
           <button key={f.v} className={`filter-chip ${filter === f.v ? 'active' : ''}`} onClick={() => setFilter(f.v)}>{f.l}</button>

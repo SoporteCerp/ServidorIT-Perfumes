@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCart, getCartTotal, clearCart } from '../services/cartService';
-import { addDocument } from '../services/firestoreService';
+import { addDocument, getDocuments } from '../services/firestoreService';
 import { auth } from '../services/firebase';
+import { validateCoupon } from '../services/couponService';
 
 const YAPPY_NUMBER = '62686706';
 
@@ -11,8 +12,8 @@ export default function Checkout() {
   const fileInputRef = useRef(null);
   const [cart, setCart] = useState([]);
   const [total, setTotal] = useState(0);
-  const [name, setName] = useState(auth.currentUser?.displayName || '');
-  const [email, setEmail] = useState(auth.currentUser?.email || '');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
@@ -24,12 +25,50 @@ export default function Checkout() {
   const [reference, setReference] = useState('');
   const [uploading, setUploading] = useState(false);
 
-  useEffect(() => {
+  const [couponCode, setCouponCode] = useState('');
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponError, setCouponError] = useState('');
+  const [finalTotal, setFinalTotal] = useState(0);
+
+  useEffect(() => { loadProfile(); }, []);
+
+  const loadProfile = async () => {
+    try {
+      const users = await getDocuments('users', [{ field: 'uid', operator: '==', value: auth.currentUser.uid }]);
+      if (users.length > 0) {
+        const u = users[0];
+        setName(u.name || auth.currentUser?.displayName || '');
+        setPhone(u.phone || '');
+        setAddress(u.address || '');
+      } else {
+        setName(auth.currentUser?.displayName || '');
+      }
+      setEmail(auth.currentUser?.email || '');
+    } catch {
+      setName(auth.currentUser?.displayName || '');
+      setEmail(auth.currentUser?.email || '');
+    }
     const c = getCart();
     if (c.length === 0) { navigate('/cart'); return; }
     setCart(c);
-    setTotal(getCartTotal());
-  }, []);
+    const t = getCartTotal();
+    setTotal(t);
+    setFinalTotal(t);
+  };
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) { setCouponError('Escribe un codigo'); return; }
+    const result = await validateCoupon(couponCode, total);
+    if (result.valid) {
+      setCouponDiscount(result.discount);
+      setFinalTotal(Math.max(0, total - result.discount));
+      setCouponError('');
+    } else {
+      setCouponDiscount(0);
+      setFinalTotal(total);
+      setCouponError(result.error);
+    }
+  };
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -49,7 +88,10 @@ export default function Checkout() {
     try {
       const docRef = await addDocument('orders', {
         items: cart.map(i => ({ id: i.id, name: i.name, brand: i.brand, price: i.price, quantity: i.quantity, image: i.image })),
-        total,
+        total: finalTotal,
+        subtotal: total,
+        discount: couponDiscount,
+        couponCode: couponCode || null,
         customerName: name,
         customerEmail: email,
         customerPhone: phone,
@@ -99,7 +141,7 @@ export default function Checkout() {
           <p style={{fontSize:13,color:'var(--gray-400)',marginTop:10}}>Referencia Yappy</p>
           <p style={{fontWeight:700,fontSize:16}}>{reference}</p>
           <p style={{fontSize:13,color:'var(--gray-400)',marginTop:10}}>Total</p>
-          <p style={{fontWeight:700,fontSize:20,color:'var(--primary-dark)'}}>${total.toFixed(2)}</p>
+          <p style={{fontWeight:700,fontSize:20,color:'var(--primary-dark)'}}>${finalTotal.toFixed(2)}</p>
         </div>
         <button className="btn btn-primary" onClick={() => navigate('/orders')}>Ver Mis Pedidos</button>
         <button className="btn btn-outline" style={{marginTop:10}} onClick={() => navigate('/')}>Volver al Catalogo</button>
@@ -115,7 +157,7 @@ export default function Checkout() {
           <div className="yappy-title">Numero de Yappy</div>
           <div className="yappy-number">{YAPPY_NUMBER}</div>
           <div className="yappy-instruction">
-            Abre tu app Yappy y envia <strong>${total.toFixed(2)}</strong> al numero de arriba.
+            Abre tu app Yappy y envia <strong>${finalTotal.toFixed(2)}</strong> al numero de arriba.
           </div>
         </div>
 
@@ -212,6 +254,16 @@ export default function Checkout() {
         </div>
       </div>
 
+      <h3 className="section-title mb-15">Codigo de Descuento</h3>
+      <div className="card">
+        <div style={{display:'flex',gap:8}}>
+          <input className="form-input" placeholder="Ej: DESCUENTO10" value={couponCode} onChange={e => setCouponCode(e.target.value)} style={{flex:1,marginBottom:0}} />
+          <button className="btn btn-primary" style={{width:'auto',padding:'0 20px',marginBottom:0}} onClick={handleApplyCoupon}>Aplicar</button>
+        </div>
+        {couponDiscount > 0 && <p style={{color:'var(--success)',marginTop:8,fontSize:14}}>✓ Descuento aplicado: -${couponDiscount.toFixed(2)}</p>}
+        {couponError && <p style={{color:'var(--danger)',marginTop:8,fontSize:14}}>{couponError}</p>}
+      </div>
+
       <h3 className="section-title mb-15">Resumen</h3>
       <div className="card">
         {cart.map(item => (
@@ -220,9 +272,15 @@ export default function Checkout() {
             <span style={{fontWeight:600}}>${(item.price * item.quantity).toFixed(2)}</span>
           </div>
         ))}
+        {couponDiscount > 0 && (
+          <div style={{display:'flex',justifyContent:'space-between',padding:'8px 0',color:'var(--success)'}}>
+            <span style={{fontSize:14}}>Descuento ({couponCode})</span>
+            <span style={{fontWeight:600}}>-${couponDiscount.toFixed(2)}</span>
+          </div>
+        )}
         <div style={{display:'flex',justifyContent:'space-between',padding:'12px 0',marginTop:5}}>
           <span style={{fontSize:18,fontWeight:700}}>Total</span>
-          <span style={{fontSize:20,fontWeight:700,color:'var(--primary-dark)'}}>${total.toFixed(2)}</span>
+          <span style={{fontSize:20,fontWeight:700,color:'var(--primary-dark)'}}>${finalTotal.toFixed(2)}</span>
         </div>
       </div>
 

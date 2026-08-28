@@ -8,6 +8,7 @@ export default function AdminInventory() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(defaultForm);
+  const [imagePreview, setImagePreview] = useState(null);
 
   useEffect(() => { loadProducts(); }, []);
 
@@ -16,12 +17,25 @@ export default function AdminInventory() {
     setProducts(data);
   };
 
-  const openAdd = () => { setEditingId(null); setForm(defaultForm); setModalOpen(true); };
+  const openAdd = () => { setEditingId(null); setForm(defaultForm); setImagePreview(null); setModalOpen(true); };
 
   const openEdit = (p) => {
     setEditingId(p.id);
     setForm({ name: p.name, brand: p.brand, price: p.price, stock: p.stock, category: p.category, description: p.description || '', image: p.image || '' });
+    setImagePreview(p.image || null);
     setModalOpen(true);
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 500000) { alert('Imagen muy grande. Maximo 500KB.'); return; }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setImagePreview(ev.target.result);
+      setForm({...form, image: ev.target.result});
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async (e) => {
@@ -61,12 +75,15 @@ export default function AdminInventory() {
         <div className="empty-state"><div className="empty-icon">🧴</div><div className="empty-text">No hay productos</div></div>
       ) : products.map(p => (
         <div key={p.id} className="admin-card" style={!p.active ? {opacity:0.5} : {}}>
-          <div className="admin-header">
-            <div>
+          <div style={{display:'flex',gap:12,alignItems:'flex-start'}}>
+            <div style={{width:60,height:60,borderRadius:10,background:'linear-gradient(135deg, #f3e8ff, #fce7f3)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:28,flexShrink:0,overflow:'hidden'}}>
+              {p.image ? <img src={p.image} alt={p.name} style={{width:'100%',height:'100%',objectFit:'cover'}} /> : '🧴'}
+            </div>
+            <div style={{flex:1}}>
               <div className="admin-name">{p.name}</div>
               <div className="admin-brand">{p.brand} · {p.category}</div>
+              <div className="admin-price">${p.price}</div>
             </div>
-            <div className="admin-price">${p.price}</div>
           </div>
           <div className="stock-row" style={{marginTop:10}}>
             <div className="stock-controls">
@@ -101,8 +118,19 @@ export default function AdminInventory() {
                   <button key={c.v} type="button" className={`chip ${form.category === c.v ? 'active' : ''}`} onClick={() => setForm({...form, category: c.v})}>{c.l}</button>
                 ))}
               </div>
-              <div className="form-group"><input className="form-input" placeholder="URL de imagen" value={form.image} onChange={e => setForm({...form, image: e.target.value})} /></div>
-              <div className="form-group"><textarea className="form-input" placeholder="Descripcion" value={form.description} onChange={e => setForm({...form, description: e.target.value})} style={{minHeight:60}} /></div>
+              <div className="form-group">
+                <label className="form-label">Foto del producto</label>
+                <div style={{display:'flex',gap:10,alignItems:'center'}}>
+                  <label className="btn btn-sm btn-outline" style={{cursor:'pointer'}}>
+                    📷 Elegir foto
+                    <input type="file" accept="image/*" onChange={handleImageChange} style={{display:'none'}} />
+                  </label>
+                  {form.image && <span style={{fontSize:12,color:'var(--success)'}}>✓ Foto cargada</span>}
+                </div>
+                {imagePreview && <img src={imagePreview} alt="preview" style={{width:80,height:80,objectFit:'cover',borderRadius:8,marginTop:8}} />}
+              </div>
+              <div className="form-group"><input className="form-input" placeholder="O URL de imagen" value={form.image} onChange={e => {setForm({...form, image: e.target.value}); setImagePreview(e.target.value);}} /></div>
+              <div className="form-group"><textarea className="form-input" placeholder="Descripcion" value={form.description} onChange={e => setForm({...form, description: e.target.value})} style={{minHeight:80}} /></div>
               <div className="modal-actions">
                 <button type="button" className="btn btn-outline" onClick={() => setModalOpen(false)}>Cancelar</button>
                 <button type="submit" className="btn btn-primary">{editingId ? 'Actualizar' : 'Guardar'}</button>
