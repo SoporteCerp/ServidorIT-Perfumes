@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { auth } from '../services/firebase';
 import { logoutUser, getUserRole } from '../services/authService';
 import { getDocuments, updateDocument } from '../services/firestoreService';
+import { setLanguage, getLanguage, t } from '../services/i18n';
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -14,8 +15,15 @@ export default function Profile() {
   const [role, setRole] = useState('customer');
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [lang, setLang] = useState(getLanguage());
+  const [darkMode, setDarkMode] = useState(localStorage.getItem('esencia_dark') === 'true');
 
   useEffect(() => { loadProfile(); }, []);
+
+  useEffect(() => {
+    document.body.classList.toggle('dark-mode', darkMode);
+    localStorage.setItem('esencia_dark', darkMode);
+  }, [darkMode]);
 
   const loadProfile = async () => {
     try {
@@ -32,7 +40,7 @@ export default function Profile() {
   };
 
   const handleSave = async () => {
-    if (!name) { alert('El nombre es obligatorio'); return; }
+    if (!name) { alert(t('name') + ' required'); return; }
     setLoading(true);
     try {
       if (userId) {
@@ -44,41 +52,69 @@ export default function Profile() {
     setLoading(false);
   };
 
+  const handleLanguageChange = (newLang) => {
+    setLang(newLang);
+    setLanguage(newLang);
+    window.location.reload();
+  };
+
   const handleLogout = async () => { await logoutUser(); navigate('/login'); };
 
   return (
     <div className="profile-page">
-      <h3 className="section-title mb-15">Mi Perfil</h3>
+      <h3 className="section-title mb-15">{t('profile')}</h3>
 
       <div className="profile-card">
         <div className="profile-avatar">{name ? name.charAt(0).toUpperCase() : '?'}</div>
         <div className="profile-email">{user?.email}</div>
-        <div className="profile-role">{role === 'admin' ? '🔧 Admin' : '👤 Cliente'}</div>
+        <div className="profile-role">{role === 'admin' ? '🔧 Admin' : '👤 Customer'}</div>
       </div>
 
       <div className="form-group">
-        <label className="form-label">Nombre completo</label>
+        <label className="form-label">{t('profile')} Name</label>
         <input className="form-input" value={name} onChange={e => setName(e.target.value)} />
       </div>
 
       <div className="form-group">
-        <label className="form-label">Telefono</label>
-        <input className="form-input" placeholder="Ej: 6000-1234" value={phone} onChange={e => setPhone(e.target.value)} />
+        <label className="form-label">Phone</label>
+        <input className="form-input" placeholder="6000-1234" value={phone} onChange={e => setPhone(e.target.value)} />
       </div>
 
       <div className="form-group">
-        <label className="form-label">Direccion</label>
-        <input className="form-input" placeholder="Tu direccion de entrega" value={address} onChange={e => setAddress(e.target.value)} />
+        <label className="form-label">Address</label>
+        <input className="form-input" placeholder="Delivery address" value={address} onChange={e => setAddress(e.target.value)} />
       </div>
 
-      {saved && <p style={{color:'var(--success)',textAlign:'center',marginBottom:10}}>Guardado!</p>}
+      {saved && <p style={{color:'var(--success)',textAlign:'center',marginBottom:10}}>Saved!</p>}
 
       <button className="btn btn-primary" onClick={handleSave} disabled={loading} style={{width:'100%'}}>
-        {loading ? 'Guardando...' : 'Guardar Cambios'}
+        {loading ? 'Saving...' : 'Save Changes'}
       </button>
 
-      <button className="btn btn-outline" onClick={handleLogout} style={{width:'100%',marginTop:10}}>
-        Cerrar Sesion
+      <div className="card" style={{marginTop:15}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 0',borderBottom:'1px solid var(--gray-100)'}}>
+          <span style={{fontSize:14,fontWeight:600}}>🌐 {t('language')}</span>
+          <div className="chip-row" style={{margin:0}}>
+            <button className={`chip ${lang === 'es' ? 'active' : ''}`} onClick={() => handleLanguageChange('es')} style={{padding:'6px 12px',fontSize:12}}>ES</button>
+            <button className={`chip ${lang === 'en' ? 'active' : ''}`} onClick={() => handleLanguageChange('en')} style={{padding:'6px 12px',fontSize:12}}>EN</button>
+          </div>
+        </div>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 0'}}>
+          <span style={{fontSize:14,fontWeight:600}}>🌙 {t('darkMode')}</span>
+          <div onClick={() => setDarkMode(!darkMode)} style={{
+            width:50,height:28,borderRadius:14,background:darkMode?'var(--primary)':'var(--gray-300)',
+            position:'relative',cursor:'pointer',transition:'background 0.3s'
+          }}>
+            <div style={{
+              width:24,height:24,borderRadius:'50%',background:'#fff',position:'absolute',top:2,
+              left:darkMode?24:2,transition:'left 0.3s',boxShadow:'0 2px 4px rgba(0,0,0,0.2)'
+            }}/>
+          </div>
+        </div>
+      </div>
+
+      <button className="btn btn-outline" onClick={handleLogout} style={{width:'100%',marginTop:15}}>
+        🚪 {t('logout')}
       </button>
     </div>
   );

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getDocuments, addDocument, updateDocument, deleteDocument } from '../services/firestoreService';
+import { recordPrice } from '../services/priceHistoryService';
 
 const defaultForm = { name: '', brand: '', price: '', stock: '', category: 'unisex', description: '', image: '' };
 
@@ -43,9 +44,14 @@ export default function AdminInventory() {
     if (!form.name || !form.brand || !form.price) { alert('Nombre, marca y precio obligatorios'); return; }
     const data = { ...form, price: parseFloat(form.price), stock: parseInt(form.stock) || 0 };
     if (editingId) {
+      const oldProduct = products.find(p => p.id === editingId);
+      if (oldProduct && oldProduct.price !== data.price) {
+        await recordPrice(editingId, data.price);
+      }
       await updateDocument('products', editingId, data);
     } else {
-      await addDocument('products', { ...data, active: true });
+      const docRef = await addDocument('products', { ...data, active: true });
+      await recordPrice(docRef, data.price);
     }
     setModalOpen(false);
     loadProducts();

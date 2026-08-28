@@ -57,6 +57,9 @@ export default function Layout() {
               🛒
               {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
             </button>
+            <button className="icon-btn" onClick={() => navigate('/chat')}>💬</button>
+            <button className="icon-btn" onClick={() => navigate('/stores')}>🏪</button>
+            {role === 'admin' && <button className="icon-btn" onClick={() => navigate('/reports')}>📈</button>}
             {role === 'admin' && <button className="icon-btn" onClick={() => navigate('/coupons')}>🏷️</button>}
             <button className="icon-btn" onClick={() => navigate('/profile')}>👤</button>
             <button className="icon-btn" onClick={handleLogout}>🚪</button>

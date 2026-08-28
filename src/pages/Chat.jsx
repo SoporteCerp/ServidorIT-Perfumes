@@ -1,0 +1,113 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { auth } from '../services/firebase';
+import { getUserRole } from '../services/authService';
+import { getOrCreateChat, sendMessage, getMessages, getUserChats, updateChatLastMessage } from '../services/chatService';
+
+export default function Chat() {
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [chatId, setChatId] = useState(null);
+  const [chats, setChats] = useState([]);
+  const [role, setRole] = useState('customer');
+  const [selectedChat, setSelectedChat] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const messagesEnd = useRef(null);
+
+  useEffect(() => { init(); }, []);
+
+  const init = async () => {
+    const r = await getUserRole(auth.currentUser.uid);
+    setRole(r);
+    if (r === 'admin') {
+      const c = await getUserChats();
+      setChats(c);
+    } else {
+      const id = await getOrCreateChat(auth.currentUser.uid, auth.currentUser.displayName || 'Cliente');
+      setChatId(id);
+      setSelectedChat(id);
+      loadMessages(id);
+    }
+  };
+
+  const loadMessages = async (id) => {
+    const msgs = await getMessages(id);
+    setMessages(msgs);
+    setTimeout(() => messagesEnd.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+  };
+
+  const handleSend = async () => {
+    if (!newMessage.trim() || !selectedChat) return;
+    setLoading(true);
+    const senderName = role === 'admin' ? 'Admin' : (auth.currentUser.displayName || 'Cliente');
+    await sendMessage(selectedChat, auth.currentUser.uid, senderName, newMessage.trim());
+    await updateChatLastMessage(selectedChat, newMessage.trim());
+    setNewMessage('');
+    await loadMessages(selectedChat);
+    setLoading(false);
+  };
+
+  const selectChat = (chat) => {
+    setSelectedChat(chat.id);
+    setChatId(chat.id);
+    loadMessages(chat.id);
+  };
+
+  if (role === 'admin' && !selectedChat) {
+    return (
+      <>
+        <h3 className="section-title mb-15">Mensajes</h3>
+        {chats.length === 0 ? (
+          <div className="empty-state"><div className="empty-icon">💬</div><div className="empty-text">No hay conversaciones</div></div>
+        ) : chats.map(c => (
+          <div key={c.id} className="admin-card" style={{cursor:'pointer'}} onClick={() => selectChat(c)}>
+            <div className="admin-name">{c.userName || 'Cliente'}</div>
+            <div className="admin-brand">{c.lastMessage || 'Sin mensajes'}</div>
+          </div>
+        ))}
+      </>
+    );
+  }
+
+  return (
+    <div style={{display:'flex',flexDirection:'column',height:'calc(100vh - 180px)'}}>
+      {role === 'admin' && (
+        <button className="btn btn-outline btn-sm" style={{marginBottom:10,width:'auto'}} onClick={() => setSelectedChat(null)}>
+          ← Volver a lista
+        </button>
+      )}
+      
+      <div style={{flex:1,overflowY:'auto',padding:'10px 0'}}>
+        {messages.map(m => (
+          <div key={m.id} style={{
+            display:'flex',justifyContent:m.senderId === auth.currentUser.uid ? 'flex-end' : 'flex-start',
+            marginBottom:10
+          }}>
+            <div style={{
+              maxWidth:'80%',padding:'10px 14px',borderRadius:16,
+              background:m.senderId === auth.currentUser.uid ? 'var(--primary)' : 'var(--gray-100)',
+              color:m.senderId === auth.currentUser.uid ? '#fff' : 'var(--gray-900)'
+            }}>
+              <div style={{fontSize:11,fontWeight:600,marginBottom:4,opacity:0.8}}>{m.senderName}</div>
+              <div style={{fontSize:14}}>{m.text}</div>
+            </div>
+          </div>
+        ))}
+        <div ref={messagesEnd} />
+      </div>
+
+      <div style={{display:'flex',gap:8,padding:'10px 0',borderTop:'1px solid var(--gray-200)'}}>
+        <input
+          className="form-input"
+          placeholder="Escribe un mensaje..."
+          value={newMessage}
+          onChange={e => setNewMessage(e.target.value)}
+          onKeyPress={e => e.key === 'Enter' && handleSend()}
+          style={{flex:1,marginBottom:0}}
+        />
+        <button className="btn btn-primary" style={{width:'auto',padding:'0 20px',marginBottom:0}} onClick={handleSend} disabled={loading || !newMessage.trim()}>
+          📤
+        </button>
+      </div>
+    </div>
+  );
+}

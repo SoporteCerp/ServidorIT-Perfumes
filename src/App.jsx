@@ -14,6 +14,9 @@ import Dashboard from './pages/Dashboard';
 import AdminInventory from './pages/AdminInventory';
 import Profile from './pages/Profile';
 import AdminCoupons from './pages/AdminCoupons';
+import Chat from './pages/Chat';
+import Reports from './pages/Reports';
+import StoreLocations from './pages/StoreLocations';
 import './App.css';
 
 function App() {
@@ -47,6 +50,9 @@ function App() {
             <Route path="/inventory" element={<AdminInventory />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/coupons" element={<AdminCoupons />} />
+            <Route path="/chat" element={<Chat />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/stores" element={<StoreLocations />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Route>
         )}

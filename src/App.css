@@ -525,3 +525,38 @@ body {
   display: inline-block; padding: 3px 8px; border-radius: 8px;
   font-size: 11px; font-weight: 600;
 }
+
+.dark-mode {
+  background: #1a1a2e !important;
+  color: #e0e0e0 !important;
+}
+.dark-mode .app-header { background: linear-gradient(135deg, #1a1a2e, #16213e) !important; }
+.dark-mode .card, .dark-mode .admin-card, .dark-mode .order-card, .dark-mode .stat-card,
+.dark-mode .recent-order-card, .dark-mode .offer-card, .dark-mode .modal-content {
+  background: #16213e !important;
+  color: #e0e0e0 !important;
+}
+.dark-mode .bottom-nav { background: #1a1a2e !important; border-color: #2a2a4a !important; }
+.dark-mode .nav-item { color: #888 !important; }
+.dark-mode .nav-item.active { color: var(--primary) !important; }
+.dark-mode .form-input { background: #2a2a4a !important; border-color: #3a3a5a !important; color: #e0e0e0 !important; }
+.dark-mode .search-bar { background: #2a2a4a !important; border-color: #3a3a5a !important; color: #e0e0e0 !important; }
+.dark-mode .product-card, .dark-mode .cart-item { background: #16213e !important; }
+.dark-mode .filter-chip { background: #2a2a4a !important; color: #e0e0e0 !important; }
+.dark-mode .filter-chip.active { background: var(--primary) !important; }
+.dark-mode .icon-btn { background: rgba(255,255,255,0.1) !important; }
+.dark-mode .yappy-box { background: linear-gradient(135deg, #1a1a2e, #2a1a3e) !important; }
+.dark-mode .profile-card { background: linear-gradient(135deg, #1a1a2e, #2a1a3e) !important; }
+.dark-mode .offers-banner { background: linear-gradient(135deg, #2a2a1e, #3a3a2e) !important; }
+.dark-mode .offer-card { background: #16213e !important; }
+.dark-mode .recent-order-card { background: #16213e !important; }
+.dark-mode .chip { background: #2a2a4a !important; color: #e0e0e0 !important; }
+.dark-mode .chip.active { background: var(--primary) !important; color: #fff !important; }
+.dark-mode .modal-overlay { background: rgba(0,0,0,0.7) !important; }
+.dark-mode .detail-image { background: linear-gradient(135deg, #1a1a2e, #2a1a3e) !important; }
+.dark-mode .product-image { background: linear-gradient(135deg, #1a1a2e, #2a1a3e) !important; }
+.dark-mode .cart-item-image { background: linear-gradient(135deg, #1a1a2e, #2a1a3e) !important; }
+.dark-mode .offer-image { background: linear-gradient(135deg, #1a1a2e, #2a1a3e) !important; }
+.dark-mode .admin-brand { color: #aaa !important; }
+.dark-mode .detail-desc { color: #bbb !important; }
+.dark-mode .cart-total { background: #16213e !important; }

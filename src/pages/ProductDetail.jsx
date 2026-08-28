@@ -3,12 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { getDocuments } from '../services/firestoreService';
 import { addToCart, getCartCount } from '../services/cartService';
 import { toggleWishlist, isInWishlist } from '../services/wishlistService';
+import { getPriceHistory } from '../services/priceHistoryService';
 
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [similar, setSimilar] = useState([]);
+  const [priceHistory, setPriceHistory] = useState([]);
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
   const [favorited, setFavorited] = useState(false);
@@ -23,6 +25,8 @@ export default function ProductDetail() {
     if (p) {
       const sims = all.filter(x => x.id !== id && x.active && (x.category === p.category || x.brand === p.brand)).slice(0, 4);
       setSimilar(sims);
+      const history = await getPriceHistory(id);
+      setPriceHistory(history);
     }
   };
 
@@ -49,6 +53,43 @@ export default function ProductDetail() {
   if (!product) return <div className="empty-state"><div className="empty-icon">⏳</div></div>;
 
   const descLines = product.description ? product.description.split('\n').filter(l => l.trim()) : [];
+
+  const renderPriceChart = () => {
+    if (priceHistory.length < 2) return null;
+    const prices = priceHistory.map(h => h.price);
+    const maxPrice = Math.max(...prices);
+    const minPrice = Math.min(...prices);
+    const range = maxPrice - minPrice || 1;
+    const chartHeight = 80;
+
+    return (
+      <div style={{marginTop:20,background:'#fff',borderRadius:12,padding:16,boxShadow:'0 2px 8px rgba(0,0,0,0.06)'}}>
+        <div style={{fontSize:14,fontWeight:600,marginBottom:12}}>📈 Historial de Precios</div>
+        <div style={{display:'flex',alignItems:'flex-end',gap:4,height:chartHeight}}>
+          {priceHistory.slice(-10).map((h, i) => {
+            const height = ((h.price - minPrice) / range) * (chartHeight - 20) + 20;
+            const isLast = i === priceHistory.slice(-10).length - 1;
+            return (
+              <div key={i} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
+                <div style={{fontSize:10,color:'var(--gray-400)'}}>${h.price}</div>
+                <div style={{
+                  width:'100%',height,height:isLast?'var(--primary)':'var(--primary-dark)',
+                  borderRadius:4,opacity:isLast?1:0.5,minHeight:8
+                }}/>
+                <div style={{fontSize:8,color:'var(--gray-400)'}}>
+                  {h.createdAt ? new Date(h.createdAt.seconds * 1000).toLocaleDateString('es-ES',{day:'2-digit',month:'short'}) : ''}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div style={{display:'flex',justifyContent:'space-between',marginTop:8,fontSize:12}}>
+          <span style={{color:'var(--success)'}}>Min: ${minPrice}</span>
+          <span style={{color:'var(--danger)'}}>Max: ${maxPrice}</span>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <>
@@ -101,6 +142,8 @@ export default function ProductDetail() {
         ) : (
           <button className="btn btn-outline" disabled>Agotado</button>
         )}
+
+        {renderPriceChart()}
 
         {similar.length > 0 && (
           <div style={{marginTop:25}}>
