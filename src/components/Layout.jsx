@@ -65,6 +65,7 @@ export default function Layout() {
       <header className="app-header">
         <div className="header-top">
           <div>
+            <img src="/logo.png" alt="Esencia Gale" style={{width:46,height:46,borderRadius:'50%',objectFit:'cover',border:'2px solid var(--primary,#D4AF37)'}} />
             <div className="header-greeting">
               {role === 'admin' ? '🔧 Admin' : 'Hola'}, {user?.displayName || 'Cliente'}
             </div>

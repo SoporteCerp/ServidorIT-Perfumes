@@ -78,7 +78,7 @@ export default function Login() {
     <div className="login-page">
       <div className="login-box">
         <div className="login-header">
-          <div className="login-logo">🧴</div>
+          <div className="login-logo"><img src="/logo.png" alt="Esencia Gale" style="width:96px;height:96px;borderRadius:50%;objectFit:cover;border:2px solid var(--primary,#D4AF37)" /></div>
           <h1 className="login-title">Esencia Gale</h1>
           <p className="login-subtitle">Las mejores fragancias</p>
         </div>
