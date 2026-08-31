@@ -4,6 +4,7 @@ import { auth } from '../services/firebase';
 
 const statusConfig = {
   pendiente_confirmacion: { label: 'Esperando confirmacion', icon: '⏳', color: '#F59E0B', message: 'Tu comprobante esta siendo revisado' },
+  en_transito: { label: 'Pendiente de entrega', icon: '📦', color: '#3B82F6', message: 'Tu pago fue confirmado y tu pedido esta en camino' },
   pagado: { label: 'Pago confirmado', icon: '✅', color: '#10B981', message: 'Tu pago fue verificado exitosamente' },
   rechazado: { label: 'Pago no verificado', icon: '❌', color: '#EF4444', message: 'El comprobante no pudo ser verificado. Contactanos.' },
   procesando: { label: 'Procesando', icon: '📦', color: '#3B82F6', message: 'Tu pedido esta siendo preparado' },

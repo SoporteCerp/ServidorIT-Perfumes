@@ -2,6 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { getDocuments, updateDocument } from '../services/firestoreService';
 import { sendInvoice } from '../services/emailService';
 
+const statusLabel = {
+  pagado: 'Pago aprobado',
+  en_transito: 'Pendiente de entrega',
+  entregado: 'Entregado',
+  pendiente_confirmacion: 'Por confirmar',
+  rechazado: 'Rechazado',
+  pendiente: 'Pendiente'
+};
+
 export default function Dashboard() {
   const [orders, setOrders] = useState([]);
   const [stats, setStats] = useState({ total: 0, revenue: 0, pending: 0, delivered: 0 });
@@ -27,7 +36,7 @@ export default function Dashboard() {
     try {
       await updateDocument('orders', order.id, {
         paymentStatus: 'pagado',
-        status: 'pagado'
+        status: 'en_transito'
       });
 
       if (order.customerEmail) {
@@ -69,7 +78,7 @@ export default function Dashboard() {
   };
 
   const pendingOrders = orders.filter(o => o.status === 'pendiente_confirmacion');
-  const paidOrders = orders.filter(o => o.status === 'pagado');
+  const paidOrders = orders.filter(o => o.status === 'pagado' || o.status === 'en_transito');
 
   return (
     <>
@@ -171,7 +180,7 @@ export default function Dashboard() {
             <div key={order.id} className="order-card" style={{borderLeft:'4px solid var(--success)'}}>
               <div className="order-header">
                 <span className="order-number">{order.customerName}</span>
-                <span className={`badge badge-${order.status}`}>{order.status}</span>
+                <span className={`badge badge-${order.status}`}>{statusLabel[order.status] || order.status}</span>
               </div>
               <div className="order-items">{order.items?.length} productos · ${order.total?.toFixed(2)}</div>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:8}}>
