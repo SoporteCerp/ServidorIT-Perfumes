@@ -123,6 +123,20 @@ export default function ProductDetail() {
           )) : 'Fragancia exclusiva de alta calidad.'}
         </div>
 
+        {product.notes && product.notes.length > 0 && (
+          <div style={{marginTop:16,background:'#fff',borderRadius:12,padding:16,boxShadow:'0 2px 8px rgba(0,0,0,0.06)'}}>
+            <div style={{fontSize:14,fontWeight:600,marginBottom:10}}>🌿 Elementos / Notas</div>
+            <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
+              {product.notes.map((n, i) => (
+                <span key={i} style={{
+                  background:'var(--primary)',color:'#fff',padding:'4px 10px',borderRadius:20,
+                  fontSize:12,fontWeight:500
+                }}>{n}</span>
+              ))}
+            </div>
+          </div>
+        )}
+
         {product.stock > 0 ? (
           <>
             <div className="quantity-control">
