@@ -1,4 +1,4 @@
-﻿import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from './firebase';
 import { addDocument, getDocuments } from './firestoreService';
 
@@ -41,4 +41,11 @@ export const updateChatLastMessage = async (chatId, message) => {
 export const deleteMessage = async (chatId, messageId) => {
   const { deleteDocument } = await import('./firestoreService');
   await deleteDocument(`chats/${chatId}/messages`, messageId);
+};
+
+export const deleteChat = async (chatId) => {
+  const { deleteDocument, getDocuments } = await import('./firestoreService');
+  const msgs = await getDocuments(`chats/${chatId}/messages`, [], 'createdAt', 'asc');
+  await Promise.all(msgs.map(m => deleteDocument(`chats/${chatId}/messages`, m.id)));
+  await deleteDocument('chats', chatId);
 };

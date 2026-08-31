@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { auth } from '../services/firebase';
 import { getUserRole } from '../services/authService';
-import { getOrCreateChat, sendMessage, subscribeToMessages, subscribeToChats, updateChatLastMessage, deleteMessage } from '../services/chatService';
+import { getOrCreateChat, sendMessage, subscribeToMessages, subscribeToChats, updateChatLastMessage, deleteMessage, deleteChat } from '../services/chatService';
 import { clearNotificationType } from '../services/notificationService';
 
 export default function Chat() {
@@ -64,6 +64,16 @@ export default function Chat() {
     }
   };
 
+  const handleDeleteChat = async (chat) => {
+    const confirmed = window.confirm(`¿Eliminar toda la conversación con ${chat.userName || 'Cliente'}?`);
+    if (!confirmed) return;
+    try {
+      await deleteChat(chat.id);
+    } catch (err) {
+      console.error('Error al eliminar conversación:', err);
+    }
+  };
+
   if (role === 'admin' && !selectedChat) {
     return (
       <>
@@ -71,9 +81,16 @@ export default function Chat() {
         {chats.length === 0 ? (
           <div className="empty-state"><div className="empty-icon">💬</div><div className="empty-text">No hay conversaciones</div></div>
         ) : chats.map(c => (
-          <div key={c.id} className="admin-card" style={{cursor:'pointer'}} onClick={() => selectChat(c)}>
-            <div className="admin-name">{c.userName || 'Cliente'}</div>
-            <div className="admin-brand">{c.lastMessage || 'Sin mensajes'}</div>
+          <div key={c.id} className="admin-card" style={{cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+            <div style={{flex:1}} onClick={() => selectChat(c)}>
+              <div className="admin-name">{c.userName || 'Cliente'}</div>
+              <div className="admin-brand">{c.lastMessage || 'Sin mensajes'}</div>
+            </div>
+            <button
+              title="Eliminar conversación"
+              style={{background:'none',border:'none',cursor:'pointer',fontSize:16,color:'var(--gray-400)',padding:'6px'}}
+              onClick={(e) => { e.stopPropagation(); handleDeleteChat(c); }}
+            >🗑️</button>
           </div>
         ))}
       </>
@@ -107,7 +124,7 @@ export default function Chat() {
                 title="Eliminar mensaje"
                 style={{background:'none',border:'none',cursor:'pointer',fontSize:16,color:'var(--gray-400)'}}
                 onClick={() => handleDeleteMessage(m.id)}
-              >🗑</button>
+              >🗑️</button>
             )}
           </div>
         ))}
