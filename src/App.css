@@ -587,3 +587,41 @@ body {
 #toast-notification {
   animation: slideDown 0.3s ease;
 }
+
+/* Login / Register - Esencia Gale (negro, dorado, blanco) */
+.login-page {
+  background: linear-gradient(160deg, #000000 0%, #1a1400 60%, #2b1f00 100%);
+}
+.login-box {
+  background: #ffffff;
+  border: 1px solid #d4af37;
+  box-shadow: 0 20px 60px rgba(212, 175, 55, 0.25);
+}
+.login-title {
+  color: #000000;
+}
+.login-subtitle {
+  color: #6b7280;
+}
+.login-page .form-input {
+  border: 1px solid #e0c76a;
+  background: #fffdf5;
+}
+.login-page .form-input:focus {
+  border-color: #d4af37;
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+}
+.login-page .btn-primary {
+  background: linear-gradient(135deg, #d4af37, #b8860b);
+  color: #000000;
+  border: none;
+}
+.login-page .btn-primary:hover {
+  background: linear-gradient(135deg, #e0c76a, #d4af37);
+}
+.login-page .btn-link {
+  color: #b8860b;
+}
+.login-page .btn-link:hover {
+  color: #8b6508;
+}
