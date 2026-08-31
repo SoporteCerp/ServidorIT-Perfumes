@@ -66,14 +66,14 @@ export default function Catalog() {
                   </div>
                 )}
                 <div className="product-price">${p.price}</div>
-                <div style={{display:'flex',alignItems:'center',gap:8,marginTop:8}} onClick={e => e.stopPropagation()}>
-                  <div style={{display:'flex',alignItems:'center',border:'1px solid var(--primary)',borderRadius:8,overflow:'hidden'}}>
-                    <button className="qty-btn" style={{background:'#fff',border:'none',cursor:'pointer',padding:'4px 8px'}} onClick={(e) => { e.stopPropagation(); setQty(p.id, Math.max(1, (quantities[p.id] || 1) - 1)); }}>-</button>
-                    <span style={{minWidth:26,textAlign:'center',fontSize:14,fontWeight:600}}>{quantities[p.id] || 1}</span>
-                    <button className="qty-btn" style={{background:'#fff',border:'none',cursor:'pointer',padding:'4px 8px'}} onClick={(e) => { e.stopPropagation(); const max = p.stock || 99; setQty(p.id, Math.min(max, (quantities[p.id] || 1) + 1)); }}>+</button>
+                <div style={{display:'flex',alignItems:'center',gap:6,marginTop:8}} onClick={e => e.stopPropagation()}>
+                  <div style={{display:'flex',alignItems:'center',border:'1px solid var(--primary)',borderRadius:6,overflow:'hidden'}}>
+                    <button className="qty-btn" style={{background:'#fff',border:'none',cursor:'pointer',padding:'2px 6px',fontSize:12,lineHeight:1}} onClick={(e) => { e.stopPropagation(); setQty(p.id, Math.max(1, (quantities[p.id] || 1) - 1)); }}>-</button>
+                    <span style={{minWidth:20,textAlign:'center',fontSize:12,fontWeight:600}}>{quantities[p.id] || 1}</span>
+                    <button className="qty-btn" style={{background:'#fff',border:'none',cursor:'pointer',padding:'2px 6px',fontSize:12,lineHeight:1}} onClick={(e) => { e.stopPropagation(); const max = p.stock || 99; setQty(p.id, Math.min(max, (quantities[p.id] || 1) + 1)); }}>+</button>
                   </div>
-                  <button className="btn btn-primary" style={{flex:1,marginTop:0}} onClick={(e) => handleAdd(e, p)}>
-                    {added[p.id] ? '✓ Agregado' : 'Agregar'}
+                  <button className={added[p.id] ? "btn add-cart-btn added" : "btn add-cart-btn"} style={{flex:1,width:40,height:34}} onClick={(e) => handleAdd(e, p)}>
+                    {added[p.id] ? '✓' : '🛒'}
                   </button>
                 </div>
               </div>
