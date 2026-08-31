@@ -55,16 +55,6 @@ export default function Catalog() {
                 <div className="product-brand">{p.brand}</div>
                 <div className="product-name">{p.name}</div>
                 {p.description && <div className="product-desc">{firstLine(p.description)}</div>}
-                {p.notes && p.notes.length > 0 && (
-                  <div style={{display:'flex',flexWrap:'wrap',gap:4,margin:'6px 0'}}>
-                    {p.notes.slice(0, 4).map((n, i) => (
-                      <span key={i} style={{
-                        background:'var(--primary)',color:'#fff',padding:'2px 8px',borderRadius:12,
-                        fontSize:10,fontWeight:500
-                      }}>{n}</span>
-                    ))}
-                  </div>
-                )}
                 <div className="product-price">${p.price}</div>
                 <div style={{display:'flex',alignItems:'center',gap:6,marginTop:8}} onClick={e => e.stopPropagation()}>
                   <div style={{display:'flex',alignItems:'center',border:'1px solid var(--primary)',borderRadius:6,overflow:'hidden'}}>
