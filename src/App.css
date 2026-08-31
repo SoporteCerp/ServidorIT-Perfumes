@@ -633,3 +633,11 @@ body {
 .login-page .btn-link:hover {
   color: #e0c76a;
 }
+
+/* responsive inventario */
+@media (max-width: 480px) {
+  .stock-row { flex-wrap: wrap; gap: 10px; }
+  .stock-row > div:last-child { margin-left: auto; flex-wrap: wrap; }
+  .admin-card { padding: 12px; }
+  .product-grid { gap: 10px; }
+}

@@ -64,7 +64,7 @@ export default function Catalog() {
                 <div className="product-name">{p.name}</div>
                 {p.description && <div className="product-desc">{firstLine(p.description)}</div>}
                 <div className="product-price">${p.price}</div>
-                {role !== 'admin' && (
+                {(
                   <div style={{display:'flex',alignItems:'center',gap:6,marginTop:8}} onClick={e => e.stopPropagation()}>
                     <div style={{display:'flex',alignItems:'center',border:'1px solid var(--primary)',borderRadius:6,overflow:'hidden'}}>
                       <button className="qty-btn" style={{background:'#fff',border:'none',cursor:'pointer',padding:'2px 6px',fontSize:12,lineHeight:1}} onClick={(e) => { e.stopPropagation(); setQty(p.id, Math.max(1, (quantities[p.id] || 1) - 1)); }}>-</button>

@@ -72,12 +72,10 @@ export default function Layout() {
             <div className="header-date">{new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
           </div>
           <div className="header-actions">
-            {role !== 'admin' && (
-              <button className="icon-btn" onClick={() => navigate('/cart')}>
+                          <button className="icon-btn" onClick={() => navigate('/cart')}>
                 🛒
                 {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
               </button>
-            )}
             <button className="icon-btn" onClick={() => { clearNotificationType('chat'); navigate('/chat'); }}>
               <svg width="20" height="20" viewBox="0 0 32 32" fill="currentColor">
                 <path d="M16.004 3C8.826 3 3 8.827 3 16.004c0 2.29.598 4.523 1.735 6.497L3 29l6.693-1.752A12.92 12.92 0 0 0 16.004 29C23.182 29 29 23.172 29 16.004S23.182 3 16.004 3zm0 23.77a10.8 10.8 0 0 1-5.53-1.516l-.396-.236-4.036 1.056 1.078-3.928-.258-.41A10.78 10.78 0 0 1 5.23 16 10.78 10.78 0 0 1 16.004 5.23 10.78 10.78 0 0 1 26.77 16a10.78 10.78 0 0 1-10.766 10.77z"/>
