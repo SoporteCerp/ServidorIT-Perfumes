@@ -1,20 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../services/firebase';
 import { logoutUser, getUserRole } from '../services/authService';
-import { getDocuments, updateDocument } from '../services/firestoreService';
+import { getDocuments, updateDocument, addDocument } from '../services/firestoreService';
+import { uploadProfilePhoto } from '../services/storageService';
 import { setLanguage, getLanguage, t } from '../services/i18n';
 
 export default function Profile() {
   const navigate = useNavigate();
   const user = auth.currentUser;
+  const fileInputRef = useRef(null);
   const [name, setName] = useState(user?.displayName || '');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
+  const [photoURL, setPhotoURL] = useState('');
   const [userId, setUserId] = useState(null);
   const [role, setRole] = useState('customer');
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [lang, setLang] = useState(getLanguage());
   const [darkMode, setDarkMode] = useState(localStorage.getItem('esencia_dark') === 'true');
 
@@ -35,6 +39,8 @@ export default function Profile() {
         if (u.phone) setPhone(u.phone);
         if (u.address) setAddress(u.address);
         if (u.name) setName(u.name);
+        if (u.photoURL) setPhotoURL(u.photoURL);
+        else if (u.photoUrl) setPhotoURL(u.photoUrl);
       }
     } catch {}
   };
@@ -52,6 +58,24 @@ export default function Profile() {
     setLoading(false);
   };
 
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { alert('Please select an image'); return; }
+    setUploading(true);
+    try {
+      const url = await uploadProfilePhoto(user.uid, file);
+      setPhotoURL(url);
+      if (userId) await updateDocument('users', userId, { photoURL: url });
+      else if (user.uid) {
+        const ref = await addDocument('users', { uid: user.uid, name, photoURL: url, role });
+        setUserId(ref);
+      }
+    } catch { alert('Upload failed'); }
+    setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const handleLanguageChange = (newLang) => {
     setLang(newLang);
     setLanguage(newLang);
@@ -65,9 +89,31 @@ export default function Profile() {
       <h3 className="section-title mb-15">{t('profile')}</h3>
 
       <div className="profile-card">
-        <div className="profile-avatar">{name ? name.charAt(0).toUpperCase() : '?'}</div>
+        <div
+          className="profile-avatar"
+          style={{
+            backgroundImage: photoURL
+              ? `url(${photoURL})`
+              : (role === 'admin' ? 'url(/logo.jpg)' : 'none'),
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            color: 'transparent'
+          }}
+        >
+          {(!photoURL && role !== 'admin') ? (name ? name.charAt(0).toUpperCase() : '?') : ''}
+        </div>
         <div className="profile-email">{user?.email}</div>
         <div className="profile-role">{role === 'admin' ? '🔧 Admin' : '👤 Customer'}</div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handlePhotoUpload}
+        />
+        <button className="btn btn-outline" style={{marginTop:10,padding:'6px 12px',fontSize:12}} onClick={() => fileInputRef.current?.click()} disabled={uploading}>
+          {uploading ? 'Subiendo...' : (photoURL ? '📷 Cambiar foto' : (role === 'admin' ? '📷 Foto de perfil' : '📷 Subir foto'))}
+        </button>
       </div>
 
       <div className="form-group">
