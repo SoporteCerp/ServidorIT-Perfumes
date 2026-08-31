@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { auth } from '../services/firebase';
 import { getUserRole } from '../services/authService';
-import { getOrCreateChat, sendMessage, subscribeToMessages, subscribeToChats, updateChatLastMessage } from '../services/chatService';
+import { getOrCreateChat, sendMessage, subscribeToMessages, subscribeToChats, updateChatLastMessage, deleteMessage } from '../services/chatService';
 import { clearNotificationType } from '../services/notificationService';
 
 export default function Chat() {
@@ -53,6 +53,17 @@ export default function Chat() {
     setSelectedChat(chat.id);
   };
 
+  const handleDeleteMessage = async (messageId) => {
+    if (!selectedChat) return;
+    const confirmed = window.confirm('¿Eliminar este mensaje?');
+    if (!confirmed) return;
+    try {
+      await deleteMessage(selectedChat, messageId);
+    } catch (err) {
+      console.error('Error al eliminar mensaje:', err);
+    }
+  };
+
   if (role === 'admin' && !selectedChat) {
     return (
       <>
@@ -76,12 +87,12 @@ export default function Chat() {
           Volver a lista
         </button>
       )}
-      
+
       <div style={{flex:1,overflowY:'auto',padding:'10px 0'}}>
         {messages.map(m => (
           <div key={m.id} style={{
             display:'flex',justifyContent:m.senderId === auth.currentUser.uid ? 'flex-end' : 'flex-start',
-            marginBottom:10
+            marginBottom:10,alignItems:'center',gap:6
           }}>
             <div style={{
               maxWidth:'80%',padding:'10px 14px',borderRadius:16,
@@ -91,6 +102,13 @@ export default function Chat() {
               <div style={{fontSize:11,fontWeight:600,marginBottom:4,opacity:0.8}}>{m.senderName}</div>
               <div style={{fontSize:14}}>{m.text}</div>
             </div>
+            {(role === 'admin' || m.senderId === auth.currentUser.uid) && (
+              <button
+                title="Eliminar mensaje"
+                style={{background:'none',border:'none',cursor:'pointer',fontSize:16,color:'var(--gray-400)'}}
+                onClick={() => handleDeleteMessage(m.id)}
+              >🗑</button>
+            )}
           </div>
         ))}
         <div ref={messagesEnd} />
