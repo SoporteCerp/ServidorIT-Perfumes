@@ -593,23 +593,31 @@ body {
   background: linear-gradient(160deg, #000000 0%, #1a1400 60%, #2b1f00 100%);
 }
 .login-box {
-  background: #ffffff;
+  background: linear-gradient(180deg, #0d0d0d, #17120a);
   border: 1px solid #d4af37;
   box-shadow: 0 20px 60px rgba(212, 175, 55, 0.25);
 }
+.login-logo {
+  filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.6));
+}
 .login-title {
-  color: #000000;
+  color: #f5e6a8;
+  text-shadow: 0 0 12px rgba(212, 175, 55, 0.3);
 }
 .login-subtitle {
-  color: #6b7280;
+  color: #b8a86b;
 }
 .login-page .form-input {
-  border: 1px solid #e0c76a;
-  background: #fffdf5;
+  border: 1px solid #4a3f1f;
+  background: #0a0a0a;
+  color: #f5f0dc;
+}
+.login-page .form-input::placeholder {
+  color: #8a7d4d;
 }
 .login-page .form-input:focus {
   border-color: #d4af37;
-  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.25);
 }
 .login-page .btn-primary {
   background: linear-gradient(135deg, #d4af37, #b8860b);
@@ -620,8 +628,8 @@ body {
   background: linear-gradient(135deg, #e0c76a, #d4af37);
 }
 .login-page .btn-link {
-  color: #b8860b;
+  color: #d4af37;
 }
 .login-page .btn-link:hover {
-  color: #8b6508;
+  color: #e0c76a;
 }

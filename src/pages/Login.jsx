@@ -45,8 +45,8 @@ export default function Login() {
             <>
               <div style={{textAlign:'center',padding:'20px 0'}}>
                 <div style={{fontSize:50,marginBottom:15}}>✅</div>
-                <p style={{color:'var(--gray-700)',fontSize:16,fontWeight:500}}>Email enviado!</p>
-                <p style={{color:'var(--gray-500)',fontSize:14,marginTop:8}}>Revisa tu bandeja de entrada en <strong>{email}</strong></p>
+                <p style={{color:'#f5e6a8',fontSize:16,fontWeight:500}}>Email enviado!</p>
+                <p style={{color:'#b8a86b',fontSize:14,marginTop:8}}>Revisa tu bandeja de entrada en <strong>{email}</strong></p>
               </div>
               <button className="btn btn-primary" onClick={() => { setShowReset(false); setResetSent(false); }}>
                 Volver al Login
