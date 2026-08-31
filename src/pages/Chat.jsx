@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { auth } from '../services/firebase';
 import { getUserRole } from '../services/authService';
 import { getOrCreateChat, sendMessage, subscribeToMessages, subscribeToChats, updateChatLastMessage } from '../services/chatService';
+import { clearNotificationType } from '../services/notificationService';
 
 export default function Chat() {
   const [messages, setMessages] = useState([]);
@@ -30,6 +31,7 @@ export default function Chat() {
 
   useEffect(() => {
     if (!selectedChat) return;
+    clearNotificationType('chat');
     const unsub = subscribeToMessages(selectedChat, (msgs) => {
       setMessages(msgs);
       setTimeout(() => messagesEnd.current?.scrollIntoView({ behavior: 'smooth' }), 100);
