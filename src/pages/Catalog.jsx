@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { auth } from '../services/firebase';
+import { getUserRole } from '../services/authService';
 import { getDocuments } from '../services/firestoreService';
 import { addToCart } from '../services/cartService';
 
@@ -10,8 +12,14 @@ export default function Catalog() {
   const [filter, setFilter] = useState('todos');
   const [quantities, setQuantities] = useState({});
   const [added, setAdded] = useState({});
+  const [role, setRole] = useState('customer');
 
-  useEffect(() => { loadProducts(); }, []);
+  useEffect(() => {
+    loadProducts();
+    if (auth.currentUser) {
+      getUserRole(auth.currentUser.uid).then(r => setRole(r || 'customer')).catch(() => setRole('customer'));
+    }
+  }, []);
 
   const loadProducts = async () => {
     const data = await getDocuments('products', [], 'name', 'asc');
