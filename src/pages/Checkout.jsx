@@ -7,6 +7,7 @@ import { validateCoupon } from '../services/couponService';
 
 const YAPPY_NUMBER = '62686706';
 const WHATSAPP_NUMBER = '50767238540';
+const IVA_RATE = 0.07;
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -31,6 +32,8 @@ export default function Checkout() {
   const [couponError, setCouponError] = useState('');
   const [finalTotal, setFinalTotal] = useState(0);
 
+  const iva = total * IVA_RATE;
+
   useEffect(() => { loadProfile(); }, []);
 
   const loadProfile = async () => {
@@ -54,19 +57,21 @@ export default function Checkout() {
     setCart(c);
     const t = getCartTotal();
     setTotal(t);
-    setFinalTotal(t);
+    setFinalTotal(t * (1 + IVA_RATE));
   };
+
+  const applyIva = (base) => Math.max(0, base * (1 + IVA_RATE));
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) { setCouponError('Escribe un codigo'); return; }
     const result = await validateCoupon(couponCode, total);
     if (result.valid) {
       setCouponDiscount(result.discount);
-      setFinalTotal(Math.max(0, total - result.discount));
+      setFinalTotal(Math.max(0, total * (1 + IVA_RATE) - result.discount));
       setCouponError('');
     } else {
       setCouponDiscount(0);
-      setFinalTotal(total);
+      setFinalTotal(total * (1 + IVA_RATE));
       setCouponError(result.error);
     }
   };
@@ -89,8 +94,9 @@ export default function Checkout() {
     try {
       const docRef = await addDocument('orders', {
         items: cart.map(i => ({ id: i.id, name: i.name, brand: i.brand, price: i.price, quantity: i.quantity, image: i.image })),
-        total: finalTotal,
         subtotal: total,
+        iva: iva,
+        total: finalTotal,
         discount: couponDiscount,
         couponCode: couponCode || null,
         customerName: name,
@@ -141,6 +147,10 @@ export default function Checkout() {
           <p style={{fontWeight:700,fontSize:16}}>{orderId?.slice(0,8).toUpperCase()}</p>
           <p style={{fontSize:13,color:'var(--gray-400)',marginTop:10}}>Referencia Yappy</p>
           <p style={{fontWeight:700,fontSize:16}}>{reference}</p>
+          <p style={{fontSize:13,color:'var(--gray-400)',marginTop:10}}>Subtotal</p>
+          <p style={{fontWeight:600,fontSize:16}}>${total.toFixed(2)}</p>
+          <p style={{fontSize:13,color:'var(--gray-400)',marginTop:10}}>IVA (7%)</p>
+          <p style={{fontWeight:600,fontSize:16}}>${iva.toFixed(2)}</p>
           <p style={{fontSize:13,color:'var(--gray-400)',marginTop:10}}>Total</p>
           <p style={{fontWeight:700,fontSize:20,color:'var(--primary-dark)'}}>${finalTotal.toFixed(2)}</p>
         </div>
@@ -273,6 +283,14 @@ export default function Checkout() {
             <span style={{fontWeight:600}}>${(item.price * item.quantity).toFixed(2)}</span>
           </div>
         ))}
+        <div style={{display:'flex',justifyContent:'space-between',padding:'8px 0'}}>
+          <span style={{fontSize:14,color:'var(--gray-700)'}}>Subtotal</span>
+          <span style={{fontWeight:600}}>${total.toFixed(2)}</span>
+        </div>
+        <div style={{display:'flex',justifyContent:'space-between',padding:'8px 0'}}>
+          <span style={{fontSize:14,color:'var(--gray-700)'}}>IVA (7%)</span>
+          <span style={{fontWeight:600}}>${iva.toFixed(2)}</span>
+        </div>
         {couponDiscount > 0 && (
           <div style={{display:'flex',justifyContent:'space-between',padding:'8px 0',color:'var(--success)'}}>
             <span style={{fontSize:14}}>Descuento ({couponCode})</span>
@@ -311,6 +329,9 @@ Fecha: ${date}
 ${divider}
 
 ${items}
+
+Subtotal: $${total.toFixed(2)}
+IVA (7%): $${iva.toFixed(2)}
 
 ${divider}
 *TOTAL: $${finalTotal.toFixed(2)}*

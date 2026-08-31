@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCart, updateCartQuantity, removeFromCart, getCartTotal } from '../services/cartService';
 
+const IVA_RATE = 0.07;
+
 export default function Cart() {
   const navigate = useNavigate();
   const [cart, setCart] = useState([]);
@@ -11,6 +13,8 @@ export default function Cart() {
   const updateQty = (id, qty) => { setCart(updateCartQuantity(id, qty)); };
   const remove = (id) => { setCart(removeFromCart(id)); };
   const total = getCartTotal();
+  const iva = total * IVA_RATE;
+  const fullTotal = total + iva;
 
   return (
     <>
@@ -41,8 +45,9 @@ export default function Cart() {
 
           <div className="cart-total">
             <div className="total-row"><span className="total-label">Subtotal</span><span className="total-value">${total.toFixed(2)}</span></div>
+            <div className="total-row"><span className="total-label">IVA (7%)</span><span className="total-value">${iva.toFixed(2)}</span></div>
             <div className="total-row"><span className="total-label">Envio</span><span className="total-value">Gratis</span></div>
-            <div className="total-row grand"><span className="total-label">Total</span><span className="total-value">${total.toFixed(2)}</span></div>
+            <div className="total-row grand"><span className="total-label">Total</span><span className="total-value">${fullTotal.toFixed(2)}</span></div>
           </div>
 
           <button className="btn btn-primary" style={{marginTop:15}} onClick={() => navigate('/checkout')}>
