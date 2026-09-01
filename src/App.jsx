@@ -1,24 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './services/firebase';
-import Login from './pages/Login';
-import Register from './pages/Register';
 import Layout from './components/Layout';
-import Catalog from './pages/Catalog';
-import ProductDetail from './pages/ProductDetail';
-import Cart from './pages/Cart';
-import Checkout from './pages/Checkout';
-import Orders from './pages/Orders';
-import Dashboard from './pages/Dashboard';
-import AdminInventory from './pages/AdminInventory';
-import Profile from './pages/Profile';
-import AdminCoupons from './pages/AdminCoupons';
-import Chat from './pages/Chat';
-import Reports from './pages/Reports';
-import StoreLocations from './pages/StoreLocations';
-import Notifications from './pages/Notifications';
 import './App.css';
+
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const Catalog = lazy(() => import('./pages/Catalog'));
+const ProductDetail = lazy(() => import('./pages/ProductDetail'));
+const Cart = lazy(() => import('./pages/Cart'));
+const Checkout = lazy(() => import('./pages/Checkout'));
+const Orders = lazy(() => import('./pages/Orders'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const AdminInventory = lazy(() => import('./pages/AdminInventory'));
+const Profile = lazy(() => import('./pages/Profile'));
+const AdminCoupons = lazy(() => import('./pages/AdminCoupons'));
+const Chat = lazy(() => import('./pages/Chat'));
+const Reports = lazy(() => import('./pages/Reports'));
+const StoreLocations = lazy(() => import('./pages/StoreLocations'));
+const Notifications = lazy(() => import('./pages/Notifications'));
 
 function App() {
   const [user, setUser] = useState(null);
@@ -31,9 +32,14 @@ function App() {
 
   if (loading) return <div style={{textAlign:'center',paddingTop:100,fontSize:40}}>⏳</div>;
 
+  const pageLoader = (
+    <div style={{textAlign:'center',paddingTop:80,fontSize:24}}>⏳ Cargando...</div>
+  );
+
   return (
     <BrowserRouter>
-      <Routes>
+      <Suspense fallback={pageLoader}>
+        <Routes>
         {!user ? (
           <>
             <Route path="/login" element={<Login />} />
@@ -58,7 +64,8 @@ function App() {
             <Route path="*" element={<Navigate to="/" />} />
           </Route>
         )}
-      </Routes>
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }
