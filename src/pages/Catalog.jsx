@@ -11,6 +11,10 @@ export default function Catalog() {
   const [products, setProducts] = useState([]);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('todos');
+  const [brandFilter, setBrandFilter] = useState('');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [sort, setSort] = useState('default');
   const [quantities, setQuantities] = useState({});
   const [added, setAdded] = useState({});
   const [role, setRole] = useState('customer');
@@ -50,11 +54,23 @@ export default function Catalog() {
     setTimeout(() => setAdded(prev => ({ ...prev, [p.id]: false })), 1500);
   };
 
+  const brandMap = {};
+  products.forEach(p => { if (p.brand) brandMap[p.brand] = (brandMap[p.brand] || 0) + 1; });
+  const brands = Object.keys(brandMap).sort();
+
   const filtered = products.filter(p => {
     const matchSearch = p.name?.toLowerCase().includes(search.toLowerCase()) || p.brand?.toLowerCase().includes(search.toLowerCase());
     const matchFilter = filter === 'todos' || p.category === filter;
-    return matchSearch && matchFilter;
+    const matchBrand = !brandFilter || p.brand === brandFilter;
+    const price = parseFloat(p.price) || 0;
+    const matchMin = minPrice === '' || price >= parseFloat(minPrice);
+    const matchMax = maxPrice === '' || price <= parseFloat(maxPrice);
+    return matchSearch && matchFilter && matchBrand && matchMin && matchMax;
   });
+
+  if (sort === 'price-asc') filtered.sort((a, b) => (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0));
+  else if (sort === 'price-desc') filtered.sort((a, b) => (parseFloat(b.price) || 0) - (parseFloat(a.price) || 0));
+  else if (sort === 'name') filtered.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
   const firstLine = (desc) => desc ? desc.split('\n')[0] : '';
 
@@ -62,9 +78,25 @@ export default function Catalog() {
     <>
       <input className="search-bar" placeholder="Buscar perfume..." value={search} onChange={e => setSearch(e.target.value)} />
       <div className="filter-row">
-        {[{v:'todos',l:'Todos'},{v:'hombre',l:'Hombre'},{v:'mujer',l:'Mujer'},{v:'unisex',l:'Unisex'}].map(f => (
+        {[{v:'todos',l:'Todos'},{v:'hombre',l:'Hombre'},{v:'mujer',l:'Mujer'},{v:'unisex',l:'Unisex'},{v:'ofertas',l:'Ofertas'},{v:'nuevos',l:'Nuevos'},{v:'importados',l:'Importados'}].map(f => (
           <button key={f.v} className={`filter-chip ${filter === f.v ? 'active' : ''}`} onClick={() => setFilter(f.v)}>{f.l}</button>
         ))}
+      </div>
+      <div className="filter-toolbar">
+        <select className="filter-select" value={brandFilter} onChange={e => setBrandFilter(e.target.value)}>
+          <option value="">Marca: Todas</option>
+          {brands.map(b => <option key={b} value={b}>{b}</option>)}
+        </select>
+        <select className="filter-select" value={sort} onChange={e => setSort(e.target.value)}>
+          <option value="default">Orden: Por defecto</option>
+          <option value="price-asc">Precio: menor a mayor</option>
+          <option value="price-desc">Precio: mayor a menor</option>
+          <option value="name">Nombre: A-Z</option>
+        </select>
+      </div>
+      <div className="filter-toolbar">
+        <input className="price-input" placeholder="Precio min" type="number" value={minPrice} onChange={e => setMinPrice(e.target.value)} />
+        <input className="price-input" placeholder="Precio max" type="number" value={maxPrice} onChange={e => setMaxPrice(e.target.value)} />
       </div>
       {filtered.length === 0 ? (
         <div className="empty-state"><div className="empty-icon">🧴</div><div className="empty-text">No hay productos</div></div>
