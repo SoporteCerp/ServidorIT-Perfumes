@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getDocuments, addDocument, updateDocument, deleteDocument } from '../services/firestoreService';
 import { recordPrice } from '../services/priceHistoryService';
+import { uploadProductImage } from '../services/storageService';
 
 const defaultForm = { name: '', brand: '', price: '', cost: '', stock: '', category: 'unisex', description: '', image: '', images: [] };
 
@@ -10,6 +11,7 @@ export default function AdminInventory() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(defaultForm);
   const [imagePreview, setImagePreview] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => { loadProducts(); }, []);
 
@@ -63,20 +65,30 @@ export default function AdminInventory() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name || !form.brand || !form.price) { alert('Nombre, marca y precio obligatorios'); return; }
-    const imgArr = Array.isArray(form.images) ? form.images.filter(Boolean) : [];
-    const data = { ...form, images: imgArr, image: imgArr[0] || '', price: parseFloat(form.price), cost: form.cost ? parseFloat(form.cost) : parseFloat(form.price), stock: parseInt(form.stock) || 0 };
-    if (editingId) {
-      const oldProduct = products.find(p => p.id === editingId);
-      if (oldProduct && oldProduct.price !== data.price) {
-        await recordPrice(editingId, data.price);
+    setSaving(true);
+    try {
+      const rawImgs = Array.isArray(form.images) ? form.images.filter(Boolean) : [];
+      const uploaded = [];
+      for (let i = 0; i < rawImgs.length; i++) {
+        uploaded.push(await uploadProductImage(rawImgs[i], i));
       }
-      await updateDocument('products', editingId, data);
-    } else {
-      const docRef = await addDocument('products', { ...data, active: true });
-      await recordPrice(docRef, data.price);
+      const data = { ...form, images: uploaded, image: uploaded[0] || '', price: parseFloat(form.price), cost: form.cost ? parseFloat(form.cost) : parseFloat(form.price), stock: parseInt(form.stock) || 0 };
+      if (editingId) {
+        const oldProduct = products.find(p => p.id === editingId);
+        if (oldProduct && oldProduct.price !== data.price) {
+          await recordPrice(editingId, data.price);
+        }
+        await updateDocument('products', editingId, data);
+      } else {
+        const docRef = await addDocument('products', { ...data, active: true });
+        await recordPrice(docRef, data.price);
+      }
+      setModalOpen(false);
+      loadProducts();
+    } catch (err) {
+      alert('Error al guardar: ' + (err && err.message ? err.message : 'verifica las imagenes'));
     }
-    setModalOpen(false);
-    loadProducts();
+    setSaving(false);
   };
 
   const toggleActive = async (id, active) => {
@@ -178,7 +190,7 @@ export default function AdminInventory() {
               <div className="form-group"><textarea className="form-input" placeholder="Descripcion" value={form.description} onChange={e => setForm({...form, description: e.target.value})} style={{minHeight:80}} /></div>
               <div className="modal-actions">
                 <button type="button" className="btn btn-outline" onClick={() => setModalOpen(false)}>Cancelar</button>
-                <button type="submit" className="btn btn-primary">{editingId ? 'Actualizar' : 'Guardar'}</button>
+                <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Guardando...' : (editingId ? 'Actualizar' : 'Guardar')}</button>
               </div>
             </form>
           </div>
