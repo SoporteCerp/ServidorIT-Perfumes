@@ -93,7 +93,7 @@ export default function Checkout() {
     setLoading(true);
     try {
       const docRef = await addDocument('orders', {
-        items: cart.map(i => ({ id: i.id, name: i.name, brand: i.brand, price: i.price, quantity: i.quantity, image: i.image })),
+        items: cart.map(i => ({ id: i.id, name: i.name, brand: i.brand, price: i.price, cost: i.cost ?? i.price, quantity: i.quantity, image: i.image })),
         subtotal: total,
         iva: iva,
         total: finalTotal,

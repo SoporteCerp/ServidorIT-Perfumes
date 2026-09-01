@@ -13,7 +13,7 @@ const statusLabel = {
 
 export default function Dashboard() {
   const [orders, setOrders] = useState([]);
-  const [stats, setStats] = useState({ total: 0, revenue: 0, pending: 0, delivered: 0 });
+  const [stats, setStats] = useState({ total: 0, revenue: 0, cost: 0, profit: 0, pending: 0, delivered: 0 });
   const [viewingImage, setViewingImage] = useState(null);
   const [loadingAction, setLoadingAction] = useState(null);
 
@@ -22,9 +22,14 @@ export default function Dashboard() {
   const loadData = async () => {
     const data = await getDocuments('orders', [], 'createdAt', 'desc');
     setOrders(data);
+    const paid = data.filter(o => o.paymentStatus === 'pagado');
+    const cost = paid.reduce((s, o) => s + (o.items?.reduce((si, i) => si + ((i.cost ?? i.price) * i.quantity), 0) || 0), 0);
+    const revenue = paid.reduce((s, o) => s + (o.total || 0), 0);
     setStats({
       total: data.length,
-      revenue: data.filter(o => o.paymentStatus === 'pagado').reduce((s, o) => s + (o.total || 0), 0),
+      revenue,
+      cost,
+      profit: revenue - cost,
       pending: data.filter(o => o.status === 'pendiente_confirmacion').length,
       delivered: data.filter(o => o.status === 'entregado').length
     });
@@ -102,7 +107,17 @@ export default function Dashboard() {
         <div className="stat-card">
           <span className="stat-icon">💰</span>
           <div className="stat-number">${stats.revenue.toFixed(0)}</div>
-          <div className="stat-label">Ingresos</div>
+          <div className="stat-label">Ingresos (ventas)</div>
+        </div>
+        <div className="stat-card">
+          <span className="stat-icon">🧴</span>
+          <div className="stat-number">${stats.cost.toFixed(0)}</div>
+          <div className="stat-label">Costo perfumes</div>
+        </div>
+        <div className="stat-card">
+          <span className="stat-icon">📈</span>
+          <div className="stat-number">${stats.profit.toFixed(0)}</div>
+          <div className="stat-label">Ganancia</div>
         </div>
         <div className="stat-card">
           <span className="stat-icon">⏳</span>

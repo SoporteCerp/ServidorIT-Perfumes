@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getDocuments, addDocument, updateDocument, deleteDocument } from '../services/firestoreService';
 import { recordPrice } from '../services/priceHistoryService';
 
-const defaultForm = { name: '', brand: '', price: '', stock: '', category: 'unisex', description: '', image: '' };
+const defaultForm = { name: '', brand: '', price: '', cost: '', stock: '', category: 'unisex', description: '', image: '' };
 
 export default function AdminInventory() {
   const [products, setProducts] = useState([]);
@@ -22,7 +22,7 @@ export default function AdminInventory() {
 
   const openEdit = (p) => {
     setEditingId(p.id);
-    setForm({ name: p.name, brand: p.brand, price: p.price, stock: p.stock, category: p.category, description: p.description || '', image: p.image || '' });
+    setForm({ name: p.name, brand: p.brand, price: p.price, cost: p.cost ?? '', stock: p.stock, category: p.category, description: p.description || '', image: p.image || '' });
     setImagePreview(p.image || null);
     setModalOpen(true);
   };
@@ -42,7 +42,7 @@ export default function AdminInventory() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name || !form.brand || !form.price) { alert('Nombre, marca y precio obligatorios'); return; }
-    const data = { ...form, price: parseFloat(form.price), stock: parseInt(form.stock) || 0 };
+    const data = { ...form, price: parseFloat(form.price), cost: form.cost ? parseFloat(form.cost) : parseFloat(form.price), stock: parseInt(form.stock) || 0 };
     if (editingId) {
       const oldProduct = products.find(p => p.id === editingId);
       if (oldProduct && oldProduct.price !== data.price) {
@@ -89,6 +89,7 @@ export default function AdminInventory() {
               <div className="admin-name">{p.name}</div>
               <div className="admin-brand">{p.brand} · {p.category}</div>
               <div className="admin-price">${p.price}</div>
+              <div style={{fontSize:12,color:'var(--gray-400)'}}>Costo: ${p.cost ?? p.price}</div>
             </div>
           </div>
           <div className="stock-row" style={{marginTop:10}}>
@@ -117,7 +118,8 @@ export default function AdminInventory() {
             <form onSubmit={handleSubmit}>
               <div className="form-group"><input className="form-input" placeholder="Nombre *" value={form.name} onChange={e => setForm({...form, name: e.target.value})} /></div>
               <div className="form-group"><input className="form-input" placeholder="Marca *" value={form.brand} onChange={e => setForm({...form, brand: e.target.value})} /></div>
-              <div className="form-group"><input className="form-input" placeholder="Precio *" type="number" value={form.price} onChange={e => setForm({...form, price: e.target.value})} /></div>
+              <div className="form-group"><input className="form-input" placeholder="Precio de venta *" type="number" value={form.price} onChange={e => setForm({...form, price: e.target.value})} /></div>
+              <div className="form-group"><input className="form-input" placeholder="Costo (precio de compra)" type="number" value={form.cost} onChange={e => setForm({...form, cost: e.target.value})} /></div>
               <div className="form-group"><input className="form-input" placeholder="Stock" type="number" value={form.stock} onChange={e => setForm({...form, stock: e.target.value})} /></div>
               <div className="chip-row">
                 {[{v:'hombre',l:'Hombre'},{v:'mujer',l:'Mujer'},{v:'unisex',l:'Unisex'},{v:'ofertas',l:'Ofertas'},{v:'nuevos',l:'Nuevos'},{v:'importados',l:'Importados'}].map(c => (
