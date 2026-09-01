@@ -93,10 +93,13 @@ export default function AdminInventory() {
             </div>
           </div>
           <div className="stock-row" style={{marginTop:10}}>
-            <div className="stock-controls">
-              <button className="stock-btn" onClick={() => updateStock(p.id, p.stock, 'subtract')}>-</button>
-              <span className="stock-number">{p.stock}</span>
-              <button className="stock-btn" onClick={() => updateStock(p.id, p.stock, 'add')}>+</button>
+            <div style={{display:'flex',alignItems:'center',gap:10}}>
+              <span style={{fontSize:13,color:'var(--gray-500)',fontWeight:600}}>Stock</span>
+              <div className="catalog-qty">
+                <button onClick={() => updateStock(p.id, p.stock, 'subtract')}>-</button>
+                <span>{p.stock}</span>
+                <button onClick={() => updateStock(p.id, p.stock, 'add')}>+</button>
+              </div>
             </div>
             <div style={{display:'flex',gap:8}}>
               <button className="btn btn-sm btn-primary" onClick={() => openEdit(p)}>Editar</button>
