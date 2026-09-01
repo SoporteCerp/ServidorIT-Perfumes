@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getDocuments, updateDocument } from '../services/firestoreService';
+import { getDocuments, updateDocument, deleteDocument } from '../services/firestoreService';
 import { sendInvoice } from '../services/emailService';
 
 const statusLabel = {
@@ -74,6 +74,16 @@ export default function Dashboard() {
       await updateDocument('orders', order.id, { status: 'entregado' });
       loadData();
     } catch (e) { alert('Error'); }
+    finally { setLoadingAction(null); }
+  };
+
+  const handleDelete = async (order) => {
+    if (!confirm(`¿Eliminar el pedido de ${order.customerName} por $${order.total}? Esta accion no se puede deshacer.`)) return;
+    setLoadingAction(order.id);
+    try {
+      await deleteDocument('orders', order.id);
+      loadData();
+    } catch (e) { alert('Error al eliminar'); }
     finally { setLoadingAction(null); }
   };
 
@@ -195,6 +205,42 @@ export default function Dashboard() {
               </div>
             </div>
           ))}
+        </>
+      )}
+
+      {orders.length > 0 && (
+        <>
+          <h3 className="section-title mb-15" style={{marginTop:20}}>📋 Todos los Pedidos ({orders.length})</h3>
+          {orders.map(order => {
+            const st = statusLabel[order.status] || order.status;
+            return (
+              <div key={order.id} className="order-card">
+                <div className="order-header">
+                  <span className="order-number">{order.customerName}</span>
+                  <span className={`badge badge-${order.status}`}>{st}</span>
+                </div>
+                <div className="order-items">
+                  {order.items?.map((item, i) => (
+                    <span key={i}>{item.name} x{item.quantity}{i < (order.items?.length || 0) - 1 ? ', ' : ''}</span>
+                  ))}
+                </div>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:8,paddingTop:8,borderTop:'1px solid var(--gray-100)'}}>
+                  <span style={{fontWeight:700,fontSize:16,color:'var(--primary-dark)'}}>${order.total?.toFixed(2)}</span>
+                  <span style={{fontSize:12,color:'var(--gray-400)'}}>
+                    {order.createdAt?.toDate ? new Date(order.createdAt.toDate()).toLocaleDateString() : ''}
+                  </span>
+                </div>
+                <button
+                  className="btn btn-outline"
+                  onClick={() => handleDelete(order)}
+                  disabled={loadingAction === order.id}
+                  style={{width:'100%',marginTop:10,padding:'6px 12px',fontSize:12,color:'#EF4444',borderColor:'#FECACA'}}
+                >
+                  {loadingAction === order.id ? '...' : '🗑 Eliminar'}
+                </button>
+              </div>
+            );
+          })}
         </>
       )}
 
