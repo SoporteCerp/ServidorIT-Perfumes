@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getDocuments } from '../services/firestoreService';
+import { getDocuments, deleteDocument } from '../services/firestoreService';
 import { auth } from '../services/firebase';
 
 const statusConfig = {
@@ -20,6 +20,14 @@ export default function Orders() {
   const loadOrders = async () => {
     const all = await getDocuments('orders', [], 'createdAt', 'desc');
     setOrders(all.filter(o => o.userId === auth.currentUser.uid));
+  };
+
+  const handleDelete = async (orderId) => {
+    if (!window.confirm('¿Eliminar este pedido?')) return;
+    try {
+      await deleteDocument('orders', orderId);
+      setOrders(prev => prev.filter(o => o.id !== orderId));
+    } catch {}
   };
 
   return (
@@ -53,6 +61,14 @@ export default function Orders() {
                 {order.createdAt?.toDate ? new Date(order.createdAt.toDate()).toLocaleDateString() : ''}
               </span>
             </div>
+
+            <button
+              className="btn btn-outline"
+              onClick={() => handleDelete(order.id)}
+              style={{width:'100%',marginTop:10,padding:'6px 12px',fontSize:12,color:'#EF4444',borderColor:'#FECACA'}}
+            >
+              🗑 Eliminar pedido
+            </button>
 
             {order.status === 'rechazado' && (
               <div style={{marginTop:10,background:'#FEE2E2',borderRadius:8,padding:12}}>
