@@ -65,15 +65,15 @@ export default function Catalog() {
                 {p.description && <div className="product-desc">{firstLine(p.description)}</div>}
                 <div className="product-price">${p.price}</div>
                 {(
-                  <div style={{display:'flex',alignItems:'center',gap:6,marginTop:8}} onClick={e => e.stopPropagation()}>
-                    <div style={{display:'flex',alignItems:'center',border:'1px solid var(--primary)',borderRadius:6,overflow:'hidden'}}>
-                      <button className="qty-btn" style={{background:'#fff',border:'none',cursor:'pointer',padding:'2px 6px',fontSize:12,lineHeight:1}} onClick={(e) => { e.stopPropagation(); setQty(p.id, Math.max(1, (quantities[p.id] || 1) - 1)); }}>-</button>
-                      <span style={{minWidth:20,textAlign:'center',fontSize:12,fontWeight:600}}>{quantities[p.id] || 1}</span>
-                      <button className="qty-btn" style={{background:'#fff',border:'none',cursor:'pointer',padding:'2px 6px',fontSize:12,lineHeight:1}} onClick={(e) => { e.stopPropagation(); const max = p.stock || 99; setQty(p.id, Math.min(max, (quantities[p.id] || 1) + 1)); }}>+</button>
+                  <div style={{display:'flex',alignItems:'center',gap:8,marginTop:10}} onClick={e => e.stopPropagation()}>
+                    <div className="catalog-qty">
+                      <button onClick={(e) => { e.stopPropagation(); setQty(p.id, Math.max(1, (quantities[p.id] || 1) - 1)); }}>-</button>
+                      <span>{quantities[p.id] || 1}</span>
+                      <button onClick={(e) => { e.stopPropagation(); const max = p.stock || 99; setQty(p.id, Math.min(max, (quantities[p.id] || 1) + 1)); }}>+</button>
                     </div>
-                    <button className={added[p.id] ? "btn add-cart-btn added" : "btn add-cart-btn"} style={{flex:1,width:40,height:34}} onClick={(e) => handleAdd(e, p)}>
+                    <button className={`catalog-add ${added[p.id] ? 'added' : ''}`} onClick={(e) => handleAdd(e, p)}>
                       {added[p.id] ? '✓' : (
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <circle cx="9" cy="21" r="1"></circle>
                           <circle cx="20" cy="21" r="1"></circle>
                           <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
