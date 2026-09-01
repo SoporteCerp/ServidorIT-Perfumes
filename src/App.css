@@ -710,3 +710,86 @@ body {
   .admin-card { padding: 12px; }
   .product-grid { gap: 10px; }
 }
+
+/* visor de imagen en grande */
+.iv-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 400;
+}
+.iv-image {
+  max-width: 94vw;
+  max-height: 86vh;
+  border-radius: 12px;
+  object-fit: contain;
+  box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+}
+.iv-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+}
+.iv-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  font-size: 30px;
+  line-height: 40px;
+  text-align: center;
+  cursor: pointer;
+  z-index: 2;
+  user-select: none;
+}
+.iv-prev { left: 12px; }
+.iv-next { right: 12px; }
+.iv-counter {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #fff;
+  font-size: 14px;
+  background: rgba(0,0,0,0.5);
+  padding: 4px 14px;
+  border-radius: 20px;
+}
+
+/* galeria de miniaturas en detalle */
+.gallery-thumbs {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.gallery-thumb {
+  width: 54px;
+  height: 54px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  cursor: pointer;
+  border: 2px solid transparent;
+  background: var(--gray-100);
+}
+.gallery-thumb.active { border-color: var(--primary); }

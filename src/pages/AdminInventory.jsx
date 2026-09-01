@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { getDocuments, addDocument, updateDocument, deleteDocument } from '../services/firestoreService';
 import { recordPrice } from '../services/priceHistoryService';
 
-const defaultForm = { name: '', brand: '', price: '', cost: '', stock: '', category: 'unisex', description: '', image: '' };
+const defaultForm = { name: '', brand: '', price: '', cost: '', stock: '', category: 'unisex', description: '', image: '', images: [] };
 
 export default function AdminInventory() {
   const [products, setProducts] = useState([]);
@@ -21,28 +21,50 @@ export default function AdminInventory() {
   const openAdd = () => { setEditingId(null); setForm(defaultForm); setImagePreview(null); setModalOpen(true); };
 
   const openEdit = (p) => {
+    const imgs = Array.isArray(p.images) && p.images.length > 0 ? p.images : (p.image ? [p.image] : []);
     setEditingId(p.id);
-    setForm({ name: p.name, brand: p.brand, price: p.price, cost: p.cost ?? '', stock: p.stock, category: p.category, description: p.description || '', image: p.image || '' });
-    setImagePreview(p.image || null);
+    setForm({ name: p.name, brand: p.brand, price: p.price, cost: p.cost ?? '', stock: p.stock, category: p.category, description: p.description || '', image: imgs[0] || '', images: imgs });
+    setImagePreview(imgs[0] || null);
     setModalOpen(true);
   };
 
   const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (file.size > 500000) { alert('Imagen muy grande. Maximo 500KB.'); return; }
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setImagePreview(ev.target.result);
-      setForm({...form, image: ev.target.result});
-    };
-    reader.readAsDataURL(file);
+    const files = Array.from(e.target.files || []);
+    files.forEach(file => {
+      if (!file) return;
+      if (file.size > 800000) { alert('Imagen muy grande. Maximo 800KB.'); return; }
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setForm(prev => {
+          const next = { ...prev, images: [...(prev.images || []), ev.target.result], image: prev.images.length === 0 ? ev.target.result : prev.image };
+          return next;
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+    if (e.target) e.target.value = '';
+  };
+
+  const addImageUrl = () => {
+    const url = (document.getElementById('img-url-input')?.value || '').trim();
+    if (!url) return;
+    setForm(prev => ({ ...prev, images: [...(prev.images || []), url], image: prev.images.length === 0 ? url : prev.image }));
+    if (document.getElementById('img-url-input')) document.getElementById('img-url-input').value = '';
+  };
+
+  const removeImage = (idx) => {
+    setForm(prev => {
+      const next = [...(prev.images || [])];
+      next.splice(idx, 1);
+      return { ...prev, images: next, image: next[0] || '' };
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name || !form.brand || !form.price) { alert('Nombre, marca y precio obligatorios'); return; }
-    const data = { ...form, price: parseFloat(form.price), cost: form.cost ? parseFloat(form.cost) : parseFloat(form.price), stock: parseInt(form.stock) || 0 };
+    const imgArr = Array.isArray(form.images) ? form.images.filter(Boolean) : [];
+    const data = { ...form, images: imgArr, image: imgArr[0] || '', price: parseFloat(form.price), cost: form.cost ? parseFloat(form.cost) : parseFloat(form.price), stock: parseInt(form.stock) || 0 };
     if (editingId) {
       const oldProduct = products.find(p => p.id === editingId);
       if (oldProduct && oldProduct.price !== data.price) {
@@ -130,17 +152,29 @@ export default function AdminInventory() {
                 ))}
               </div>
               <div className="form-group">
-                <label className="form-label">Foto del producto</label>
-                <div style={{display:'flex',gap:10,alignItems:'center'}}>
+                <label className="form-label">Fotos del producto (puedes agregar varias)</label>
+                <div style={{display:'flex',gap:10,alignItems:'center',flexWrap:'wrap'}}>
                   <label className="btn btn-sm btn-outline" style={{cursor:'pointer'}}>
-                    📷 Elegir foto
-                    <input type="file" accept="image/*" onChange={handleImageChange} style={{display:'none'}} />
+                    📷 + Agregar fotos
+                    <input type="file" accept="image/*" multiple onChange={handleImageChange} style={{display:'none'}} />
                   </label>
-                  {form.image && <span style={{fontSize:12,color:'var(--success)'}}>✓ Foto cargada</span>}
+                  {(form.images || []).length > 0 && <span style={{fontSize:12,color:'var(--success)'}}>✓ {(form.images || []).length} foto(s)</span>}
                 </div>
-                {imagePreview && <img src={imagePreview} alt="preview" style={{width:80,height:80,objectFit:'cover',borderRadius:8,marginTop:8}} />}
+                {(form.images || []).length > 0 && (
+                  <div style={{display:'flex',gap:8,marginTop:10,flexWrap:'wrap'}}>
+                    {(form.images || []).map((img, idx) => (
+                      <div key={idx} style={{position:'relative',width:64,height:64}}>
+                        <img src={img} alt={`foto ${idx + 1}`} style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:8,border:'1px solid var(--gray-200)'}} />
+                        <button type="button" onClick={() => removeImage(idx)} style={{position:'absolute',top:-6,right:-6,width:20,height:20,borderRadius:'50%',background:'var(--danger)',color:'#fff',border:'none',fontSize:11,lineHeight:1,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div className="form-group"><input className="form-input" placeholder="O URL de imagen" value={form.image} onChange={e => {setForm({...form, image: e.target.value}); setImagePreview(e.target.value);}} /></div>
+              <div className="form-group" style={{display:'flex',gap:8}}>
+                <input id="img-url-input" className="form-input" placeholder="O URL de imagen" style={{flex:1,marginBottom:0}} />
+                <button type="button" className="btn btn-sm btn-outline" style={{marginBottom:0,whiteSpace:'nowrap'}} onClick={addImageUrl}>Agregar</button>
+              </div>
               <div className="form-group"><textarea className="form-input" placeholder="Descripcion" value={form.description} onChange={e => setForm({...form, description: e.target.value})} style={{minHeight:80}} /></div>
               <div className="modal-actions">
                 <button type="button" className="btn btn-outline" onClick={() => setModalOpen(false)}>Cancelar</button>

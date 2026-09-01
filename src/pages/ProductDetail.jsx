@@ -4,6 +4,7 @@ import { getDocuments } from '../services/firestoreService';
 import { addToCart, getCartCount } from '../services/cartService';
 import { toggleWishlist, isInWishlist } from '../services/wishlistService';
 import { getPriceHistory } from '../services/priceHistoryService';
+import ImageViewer from '../components/ImageViewer';
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -14,6 +15,8 @@ export default function ProductDetail() {
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
   const [favorited, setFavorited] = useState(false);
+  const [imageIndex, setImageIndex] = useState(0);
+  const [viewerOpen, setViewerOpen] = useState(false);
 
   useEffect(() => { loadProduct(); }, [id]);
 
@@ -94,7 +97,15 @@ export default function ProductDetail() {
   return (
     <>
       <div className="detail-image" style={{position:'relative'}}>
-        {product.image ? <img src={product.image} alt={product.name} style={{width:'100%',height:'100%',objectFit:'cover'}} /> : '🧴'}
+        {(() => {
+          const images = (Array.isArray(product.images) && product.images.filter(Boolean).length > 0)
+            ? product.images.filter(Boolean)
+            : (product.image ? [product.image] : []);
+          const current = images[imageIndex] || null;
+          return current
+            ? <img src={current} alt={product.name} style={{width:'100%',height:'100%',objectFit:'cover',cursor:'pointer'}} onClick={() => setViewerOpen(true)} />
+            : '🧴';
+        })()}
         <div style={{position:'absolute',top:15,right:15,display:'flex',gap:8}}>
           <button onClick={handleFavorite} style={{
             width:44, height:44, borderRadius:'50%', background:'#fff', border:'none',
@@ -112,6 +123,28 @@ export default function ProductDetail() {
           </button>
         </div>
       </div>
+      {(() => {
+        const images = (Array.isArray(product.images) && product.images.filter(Boolean).length > 0)
+          ? product.images.filter(Boolean)
+          : (product.image ? [product.image] : []);
+        return images.length > 1 ? (
+          <div className="gallery-thumbs">
+            {images.map((img, i) => (
+              <div key={i} className={`gallery-thumb ${i === imageIndex ? 'active' : ''}`} onClick={() => setImageIndex(i)}>
+                <img src={img} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}} />
+              </div>
+            ))}
+          </div>
+        ) : null;
+      })()}
+      {viewerOpen && (
+        <ImageViewer
+          images={(Array.isArray(product.images) && product.images.filter(Boolean).length > 0) ? product.images : [product.image]}
+          startIndex={imageIndex}
+          onClose={() => setViewerOpen(false)}
+          productName={product.name}
+        />
+      )}
       <div className="detail-info">
         <div className="detail-brand">{product.brand}</div>
         <div className="detail-name">{product.name}</div>

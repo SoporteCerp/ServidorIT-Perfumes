@@ -4,6 +4,7 @@ import { auth } from '../services/firebase';
 import { getUserRole } from '../services/authService';
 import { getDocuments } from '../services/firestoreService';
 import { addToCart } from '../services/cartService';
+import ImageViewer from '../components/ImageViewer';
 
 export default function Catalog() {
   const navigate = useNavigate();
@@ -13,6 +14,19 @@ export default function Catalog() {
   const [quantities, setQuantities] = useState({});
   const [added, setAdded] = useState({});
   const [role, setRole] = useState('customer');
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerImages, setViewerImages] = useState([]);
+  const [viewerName, setViewerName] = useState('');
+
+  const openViewer = (p) => {
+    const imgs = (Array.isArray(p.images) && p.images.filter(Boolean).length > 0)
+      ? p.images.filter(Boolean)
+      : (p.image ? [p.image] : []);
+    if (imgs.length === 0) return;
+    setViewerImages(imgs);
+    setViewerName(p.name);
+    setViewerOpen(true);
+  };
 
   useEffect(() => {
     loadProducts();
@@ -58,7 +72,12 @@ export default function Catalog() {
         <div className="product-grid">
           {filtered.map(p => (
             <div key={p.id} className="product-card" onClick={() => navigate(`/product/${p.id}`)}>
-              <div className="product-image">{p.image ? <img src={p.image} alt={p.name} style={{width:'100%',height:'100%',objectFit:'cover'}} /> : '🧴'}</div>
+              <div className="product-image" onClick={(e) => { e.stopPropagation(); openViewer(p); }} style={{cursor:'zoom-in'}}>
+                {(() => {
+                  const imgs = (Array.isArray(p.images) && p.images.filter(Boolean).length > 0) ? p.images : [p.image];
+                  return imgs[0] ? <img src={imgs[0]} alt={p.name} style={{width:'100%',height:'100%',objectFit:'cover'}} /> : '🧴';
+                })()}
+              </div>
               <div className="product-info">
                 <div className="product-brand">{p.brand}</div>
                 <div className="product-name">{p.name}</div>
@@ -86,6 +105,9 @@ export default function Catalog() {
             </div>
           ))}
         </div>
+      )}
+      {viewerOpen && (
+        <ImageViewer images={viewerImages} onClose={() => setViewerOpen(false)} productName={viewerName} />
       )}
     </>
   );
