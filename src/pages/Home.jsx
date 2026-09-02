@@ -71,6 +71,13 @@ export default function Home() {
 
   const ofertas = products.filter(p => p.category === 'Ofertas' || p.category === 'ofertas');
 
+  const brandSections = [];
+  const brands = Array.from(new Set(products.map(p => p.brand).filter(Boolean)));
+  brands.forEach(brand => {
+    const items = products.filter(p => p.brand === brand).slice(0, 2);
+    if (items.length > 0) brandSections.push({ title: brand, items });
+  });
+
   const perks = [
     { icon: '\uD83D\uDE9A', title: 'Envio a todo el pais', desc: 'Panama, Oeste y resto del pais' },
     { icon: '\u2705', title: 'Pagos Seguros', desc: 'Yappy y tarjeta' },
@@ -104,12 +111,12 @@ export default function Home() {
         </div>
       )}
 
-      {products.length > 0 && (
-        <div style={{margin:'20px 10px'}}>
-          <h3 style={{fontSize:20,fontWeight:700,marginBottom:12,paddingLeft:4}}>Todos los productos</h3>
-          <AutoCarousel items={products} navigate={navigate} />
+      {brandSections.map(section => (
+        <div key={section.title} style={{margin:'20px 10px'}}>
+          <h3 style={{fontSize:18,fontWeight:700,marginBottom:12,paddingLeft:4}}>{section.title}</h3>
+          <AutoCarousel items={section.items} navigate={navigate} />
         </div>
-      )}
+      ))}
 
       <div style={{background:'#1a1a2e',color:'#d4af37',borderRadius:16,margin:'20px 10px 0',padding:'24px 16px',textAlign:'center'}}>
         <div style={{fontSize:18,fontWeight:700,marginBottom:12}}>Esencia Gale</div>
