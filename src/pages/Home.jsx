@@ -12,7 +12,7 @@ function ProductCard({ product, navigate }) {
       style={{minWidth:'calc(50% - 6px)',maxWidth:'calc(50% - 6px)',flex:'0 0 calc(50% - 6px)',cursor:'pointer',scrollSnapAlign:'start'}}
       onClick={() => navigate('/product/' + product.id)}
     >
-      <div className="product-image" style={{height:180}}>
+      <div className="product-image" style={{aspectRatio:'1 / 1'}}>
         {imgs[0] ? <img src={imgs[0]} alt={product.name} style={{width:'100%',height:'100%',objectFit:'cover'}} /> : '🧴'}
       </div>
       <div className="product-info">
