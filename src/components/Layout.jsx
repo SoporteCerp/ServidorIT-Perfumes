@@ -16,8 +16,9 @@ const customerNav = [
 const adminNav = [
   { path: '/', icon: '\uD83C\uDFE0', label: 'Inicio' },
   { path: '/catalog', icon: '\uD83D\uDECD\uFE0F', label: 'Catalogo' },
-  { path: '/dashboard', icon: '\uD83D\uDCE6', label: 'Pedidos y Ventas' },
+  { path: '/dashboard', icon: '\uD83D\uDCE6', label: 'Pedidos' },
   { path: '/inventory', icon: '\uD83E\uDDF4', label: 'Inventario' },
+  { path: '/coupons', icon: '\uD83C\uDFF7\uFE0F', label: 'Cupones' },
 ];
 
 export default function Layout() {
