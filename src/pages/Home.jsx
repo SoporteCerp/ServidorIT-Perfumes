@@ -109,11 +109,6 @@ export default function Home() {
               </div>
             ))}
           </div>
-          <div style={{textAlign:'center',marginTop:16}}>
-            <button className="btn btn-primary" onClick={() => navigate('/catalog')} style={{padding:'12px 30px'}}>
-              {'\uD83D\uDECD\uFE0F'} Ver Catalogo Completo
-            </button>
-          </div>
         </div>
       )}
     </div>
