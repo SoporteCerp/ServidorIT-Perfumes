@@ -116,6 +116,14 @@ export default function Profile() {
         </button>
       </div>
 
+      {role === 'admin' && (
+        <div className="card" style={{marginTop:15}}>
+          <button className="btn btn-outline" style={{width:'100%',justifyContent:'space-between',display:'flex',alignItems:'center'}} onClick={() => navigate('/coupons')}>
+            <span>{'\uD83C\uDFF7\uFE0F'} Cupones de Descuento</span><span>{'\u203A'}</span>
+          </button>
+        </div>
+      )}
+
       <div className="form-group">
         <label className="form-label">{t('profile')} Name</label>
         <input className="form-input" value={name} onChange={e => setName(e.target.value)} />
