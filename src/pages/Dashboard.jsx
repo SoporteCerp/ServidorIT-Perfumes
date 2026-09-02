@@ -33,7 +33,7 @@ export default function Dashboard() {
       const totalDays = delivered.reduce((s, o) => {
         const created = new Date(o.createdAt.toDate());
         const deliveredDate = new Date(o.deliveredAt.toDate());
-        const diff = Math.ceil((deliveredDate - created) / (1000 * 60 * 60 * 24));
+        const diff = Math.max(0, Math.round((deliveredDate - created) / (1000 * 60 * 60 * 24)));
         return s + diff;
       }, 0);
       avgDeliveryDays = Math.round((totalDays / delivered.length) * 10) / 10;
