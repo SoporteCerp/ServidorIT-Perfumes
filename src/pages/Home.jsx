@@ -41,17 +41,16 @@ export default function Home() {
   };
 
   const ofertas = products.filter(p => p.category === 'Ofertas' || p.category === 'ofertas');
-  const nuevos = products.filter(p => p.category === 'Nuevos' || p.category === 'nuevos');
-  const importados = products.filter(p => p.category === 'Importados' || p.category === 'importados');
 
-  const sections = [
-    { title: '\uD83D\uDD25 Ofertas', items: ofertas },
-    { title: '\u2728 Nuevos', items: nuevos },
-    { title: '\u2708\uFE0F Importados', items: importados }
-  ].filter(s => s.items.length > 0);
+  const brandSections = [];
+  const brands = Array.from(new Set(products.map(p => p.brand).filter(Boolean)));
+  brands.forEach(brand => {
+    const items = products.filter(p => p.brand === brand).slice(0, 5);
+    if (items.length > 0) brandSections.push({ title: brand, items });
+  });
 
   const perks = [
-    { icon: '\uD83D\uDE9A', title: 'Envio Gratis', desc: 'En Panama / San Miguelito' },
+    { icon: '\uD83D\uDE9A', title: 'Envio a todo el pais', desc: 'Panama, Oeste y resto del pais' },
     { icon: '\u2705', title: 'Pagos Seguros', desc: 'Yappy y tarjeta' },
     { icon: '\u23F3', title: '2-4 dias', desc: 'De entrega' },
     { icon: '\uD83D\uDCAC', title: 'Atencion', desc: 'Chat en tiempo real' }
@@ -76,9 +75,22 @@ export default function Home() {
         ))}
       </div>
 
-      {sections.map(section => (
+      {ofertas.length > 0 && (
+        <div style={{margin:'20px 10px'}}>
+          <h3 style={{fontSize:20,fontWeight:700,marginBottom:12,paddingLeft:4}}>{'\uD83D\uDD25'} Ofertas</h3>
+          <div style={horizontalScroll}>
+            {ofertas.map(p => (
+              <div key={p.id} style={{scrollSnapAlign:'start'}}>
+                <ProductCard product={p} navigate={navigate} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {brandSections.map(section => (
         <div key={section.title} style={{margin:'20px 10px'}}>
-          <h3 style={{fontSize:20,fontWeight:700,marginBottom:12,paddingLeft:4}}>{section.title}</h3>
+          <h3 style={{fontSize:18,fontWeight:700,marginBottom:12,paddingLeft:4}}>{section.title}</h3>
           <div style={horizontalScroll}>
             {section.items.map(p => (
               <div key={p.id} style={{scrollSnapAlign:'start'}}>
