@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getDocuments } from '../services/firestoreService';
 
@@ -9,7 +9,7 @@ function ProductCard({ product, navigate }) {
   return (
     <div
       className="product-card"
-      style={{minWidth:180,maxWidth:220,flex:'0 0 auto',cursor:'pointer'}}
+      style={{minWidth:180,maxWidth:220,flex:'0 0 auto',cursor:'pointer',scrollSnapAlign:'start'}}
       onClick={() => navigate('/product/' + product.id)}
     >
       <div className="product-image" style={{height:200}}>
@@ -29,6 +29,34 @@ const horizontalScroll = {
   WebkitOverflowScrolling:'touch'
 };
 
+function AutoCarousel({ items, navigate }) {
+  const container = useRef(null);
+
+  useEffect(() => {
+    if (!container.current) return;
+    const el = container.current;
+    const speed = 2000;
+    const interval = setInterval(() => {
+      if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 10) {
+        el.scrollTo({ left: 0, behavior: 'smooth' });
+      } else {
+        el.scrollBy({ left: el.clientWidth / 1.5, behavior: 'smooth' });
+      }
+    }, speed);
+    return () => clearInterval(interval);
+  }, [items]);
+
+  return (
+    <div style={{position:'relative'}}>
+      <div ref={container} style={{...horizontalScroll, scrollSnapType:'none'}}>
+        {items.map(p => (
+          <ProductCard key={p.id} product={p} navigate={navigate} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
@@ -39,15 +67,6 @@ export default function Home() {
     const data = await getDocuments('products', [], 'createdAt', 'desc');
     setProducts(data.filter(p => p.active === true));
   };
-
-  const ofertas = products.filter(p => p.category === 'Ofertas' || p.category === 'ofertas');
-
-  const brandSections = [];
-  const brands = Array.from(new Set(products.map(p => p.brand).filter(Boolean)));
-  brands.forEach(brand => {
-    const items = products.filter(p => p.brand === brand).slice(0, 5);
-    if (items.length > 0) brandSections.push({ title: brand, items });
-  });
 
   const perks = [
     { icon: '\uD83D\uDE9A', title: 'Envio a todo el pais', desc: 'Panama, Oeste y resto del pais' },
@@ -75,52 +94,10 @@ export default function Home() {
         ))}
       </div>
 
-      {ofertas.length > 0 && (
-        <div style={{margin:'20px 10px'}}>
-          <h3 style={{fontSize:20,fontWeight:700,marginBottom:12,paddingLeft:4}}>{'\uD83D\uDD25'} Ofertas</h3>
-          <div style={horizontalScroll}>
-            {ofertas.map(p => (
-              <div key={p.id} style={{scrollSnapAlign:'start'}}>
-                <ProductCard product={p} navigate={navigate} />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {brandSections.map(section => (
-        <div key={section.title} style={{margin:'20px 10px'}}>
-          <h3 style={{fontSize:18,fontWeight:700,marginBottom:12,paddingLeft:4}}>{section.title}</h3>
-          <div style={horizontalScroll}>
-            {section.items.map(p => (
-              <div key={p.id} style={{scrollSnapAlign:'start'}}>
-                <ProductCard product={p} navigate={navigate} />
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-
       {products.length > 0 && (
         <div style={{margin:'20px 10px'}}>
           <h3 style={{fontSize:20,fontWeight:700,marginBottom:12,paddingLeft:4}}>Todos los productos</h3>
-          <div className="product-grid" style={{gridTemplateColumns:'repeat(auto-fill,minmax(150px,1fr))',gap:10}}>
-            {products.slice(0, 8).map(p => (
-              <div key={p.id} className="product-card" onClick={() => navigate('/product/' + p.id)} style={{cursor:'pointer'}}>
-                <div className="product-image" style={{height:160}}>
-                  {(() => {
-                    const imgs2 = (Array.isArray(p.images) && p.images.filter(Boolean).length > 0) ? p.images : [p.image];
-                    return imgs2[0] ? <img src={imgs2[0]} alt={p.name} style={{width:'100%',height:'100%',objectFit:'cover'}} /> : '🧴';
-                  })()}
-                </div>
-                <div className="product-info">
-                  <div className="product-brand">{p.brand}</div>
-                  <div className="product-name">{p.name}</div>
-                  <div className="product-price">${p.price}</div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <AutoCarousel items={products} navigate={navigate} />
         </div>
       )}
     </div>
