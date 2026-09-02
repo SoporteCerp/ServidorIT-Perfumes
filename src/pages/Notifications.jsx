@@ -23,7 +23,7 @@ export default function Notifications() {
         const notifs = [];
         snapshot.forEach(docSnap => {
           const order = docSnap.data();
-          if (order.status === 'pendiente_confirmacion' && r === 'admin') {
+          if (order.status === 'pendiente_confirmacion' && order.screenshot && r === 'admin') {
             notifs.push({
               id: docSnap.id,
               type: 'order',

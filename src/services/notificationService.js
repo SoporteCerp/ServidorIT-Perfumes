@@ -86,7 +86,7 @@ export const subscribeToNotifications = (callback) => {
       (snapshot) => {
         if (!initialized.orders) { initialized.orders = true; return; }
         snapshot.docChanges().forEach(c => {
-          if (c.type === 'added') callback('order', prev => prev + 1);
+          if (c.type === 'modified' && c.doc.data().screenshot) callback('order', prev => prev + 1);
         });
       }
     );
@@ -159,7 +159,7 @@ const listenNewOrders = () => {
   const unsub = onSnapshot(q, (snapshot) => {
     if (!initialized) { initialized = true; return; }
     snapshot.docChanges().forEach((change) => {
-      if (change.type === 'added' && !shownOrderIds.has(change.doc.id)) {
+      if (change.type === 'modified' && change.doc.data().screenshot && !shownOrderIds.has(change.doc.id)) {
         shownOrderIds.add(change.doc.id);
         const order = change.doc.data();
         showToast('Nuevo Pedido', order.customerName + ' - $' + order.total);
