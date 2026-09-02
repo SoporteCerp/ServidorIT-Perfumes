@@ -60,7 +60,7 @@ export default function Home() {
         <button
           className="btn btn-primary"
           style={{marginTop:20,padding:'12px 30px',fontSize:15,fontWeight:600}}
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/catalog')}
         >
           {'\uD83D\uDECD\uFE0F'} Ver Catalogo
         </button>
@@ -100,7 +100,7 @@ export default function Home() {
             ))}
           </div>
           <div style={{textAlign:'center',marginTop:16}}>
-            <button className="btn btn-primary" onClick={() => navigate('/')} style={{padding:'12px 30px'}}>
+            <button className="btn btn-primary" onClick={() => navigate('/catalog')} style={{padding:'12px 30px'}}>
               {'\uD83D\uDECD\uFE0F'} Ver Catalogo Completo
             </button>
           </div>
