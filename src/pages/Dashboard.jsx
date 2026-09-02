@@ -302,7 +302,11 @@ export default function Dashboard() {
                 <span className="order-number">{order.customerName}</span>
                 <span className={`badge badge-${order.status}`}>{statusLabel[order.status] || order.status}</span>
               </div>
-              <div className="order-items">{order.items?.length} productos {'\u00B7'} ${order.total?.toFixed(2)}</div>
+              <div className="order-items">
+                {order.items?.map((item, i) => (
+                  <span key={i}>{item.name} x{item.quantity}${item.price?.toFixed(2)}{i < (order.items?.length || 0) - 1 ? ', ' : ''}</span>
+                ))}
+              </div>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:8}}>
                 <span style={{fontSize:12,color:'var(--gray-400)'}}>
                   {order.createdAt?.toDate ? new Date(order.createdAt.toDate()).toLocaleDateString() : ''}
