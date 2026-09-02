@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
-import { getDocuments, deleteDocument, updateDocument } from '../services/firestoreService';
+import { getDocuments, deleteDocument, updateDocument, subscribeToDocuments } from '../services/firestoreService';
 import { auth } from '../services/firebase';
 import OrderTracker from '../components/OrderTracker';
 
@@ -21,7 +21,14 @@ export default function Orders() {
   const [resubmitOrder, setResubmitOrder] = useState(null);
   const fileRef = useRef(null);
 
-  useEffect(() => { loadOrders(); }, []);
+  useEffect(() => {
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+    const unsub = subscribeToDocuments('orders', [{ field: 'userId', operator: '==', value: uid }], 'createdAt', 'desc', 100, (docs) => {
+      setOrders(docs);
+    });
+    return unsub;
+  }, []);
 
   const loadOrders = async () => {
     const all = await getDocuments('orders', [], 'createdAt', 'desc');
