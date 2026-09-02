@@ -9,10 +9,10 @@ function ProductCard({ product, navigate }) {
   return (
     <div
       className="product-card"
-      style={{minWidth:180,maxWidth:220,flex:'0 0 auto',cursor:'pointer',scrollSnapAlign:'start'}}
+      style={{minWidth:'calc(50% - 6px)',maxWidth:'calc(50% - 6px)',flex:'0 0 calc(50% - 6px)',cursor:'pointer',scrollSnapAlign:'start'}}
       onClick={() => navigate('/product/' + product.id)}
     >
-      <div className="product-image" style={{height:200}}>
+      <div className="product-image" style={{height:180}}>
         {imgs[0] ? <img src={imgs[0]} alt={product.name} style={{width:'100%',height:'100%',objectFit:'cover'}} /> : '🧴'}
       </div>
       <div className="product-info">
@@ -37,10 +37,11 @@ function AutoCarousel({ items, navigate }) {
     const el = container.current;
     const speed = 2000;
     const interval = setInterval(() => {
+      const step = el.clientWidth / 2;
       if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 10) {
         el.scrollTo({ left: 0, behavior: 'smooth' });
       } else {
-        el.scrollBy({ left: el.clientWidth / 1.5, behavior: 'smooth' });
+        el.scrollBy({ left: step, behavior: 'smooth' });
       }
     }, speed);
     return () => clearInterval(interval);
