@@ -74,7 +74,7 @@ export default function Home() {
   const brandSections = [];
   const brands = Array.from(new Set(products.map(p => p.brand).filter(Boolean)));
   brands.forEach(brand => {
-    const items = products.filter(p => p.brand === brand).slice(0, 2);
+    const items = products.filter(p => p.brand === brand).slice(0, 3);
     if (items.length > 0) brandSections.push({ title: brand, items });
   });
 
