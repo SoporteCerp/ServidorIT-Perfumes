@@ -174,7 +174,7 @@ export default function Checkout() {
         status: 'pendiente_confirmacion'
       });
       setStep('done');
-    } catch (e) { alert('Error al subir comprobante'); }
+    } catch (e) { console.error('ERROR COMPROBANTE:', e); alert('Error al subir comprobante: ' + (e?.message || e)); }
     finally { setUploading(false); }
   };
 
