@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getCart, getCartTotal, clearCart } from '../services/cartService';
 import { addDocument, getDocuments } from '../services/firestoreService';
 import { auth } from '../services/firebase';
-import { validateCoupon, getCoupons } from '../services/couponService';
+import { validateCoupon, getCoupons, getBestCoupon } from '../services/couponService';
 
 const YAPPY_NUMBER = '62686706';
 const WHATSAPP_NUMBER = '50767238540';
@@ -44,6 +44,7 @@ export default function Checkout() {
   const [couponFreeShipping, setCouponFreeShipping] = useState(false);
   const [couponError, setCouponError] = useState('');
   const [availableCoupons, setAvailableCoupons] = useState([]);
+  const [manualCoupon, setManualCoupon] = useState(false);
   const [finalTotal, setFinalTotal] = useState(0);
 
   const [paymentMethod, setPaymentMethod] = useState('yappy');
@@ -67,6 +68,31 @@ export default function Checkout() {
       setAvailableCoupons((coupons || []).filter(c => c.active));
     }).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (manualCoupon) return;
+    let mounted = true;
+    getBestCoupon(total, shippingCost).then(best => {
+      if (!mounted) return;
+      if (best) {
+        setCouponCode(best.coupon.code);
+        if (best.freeShipping) {
+          setCouponFreeShipping(true);
+          setCouponDiscount(0);
+        } else {
+          setCouponFreeShipping(false);
+          setCouponDiscount(best.saving);
+        }
+        setCouponError('');
+      } else {
+        setCouponFreeShipping(false);
+        setCouponDiscount(0);
+        setCouponCode('');
+        setCouponError('');
+      }
+    }).catch(() => {});
+    return () => { mounted = false; };
+  }, [total, shippingCost, shippingZone, courier, manualCoupon]);
 
   const loadProfile = async () => {
     try {
@@ -106,6 +132,7 @@ export default function Checkout() {
   const handleApplyCoupon = async (ignore, codeToUse) => {
     const code = codeToUse || couponCode;
     if (!code.trim()) { setCouponError('Escribe un codigo'); return; }
+    setManualCoupon(true);
     const result = await validateCoupon(code, total);
     if (result.valid) {
       if (result.freeShipping) {
@@ -370,18 +397,34 @@ export default function Checkout() {
 
       <h3 className="section-title mb-15">Codigo de Descuento</h3>
       <div className="card">
+        {(couponDiscount > 0 || couponFreeShipping) && (
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+            <div>
+              <p style={{color:'var(--success)',fontSize:14}}>
+                {!manualCoupon && <span style={{fontWeight:600}}>{'\uD83C\uDF89'} Descuento autom\u00E1tico aplicado: </span>}
+                {couponFreeShipping ? 'Envio gratis' : couponDiscount > 0 ? `-$${couponDiscount.toFixed(2)}` : ''}
+                <span style={{color:'var(--gray-500)',marginLeft:6}}>({couponCode})</span>
+              </p>
+            </div>
+            <button className="btn btn-sm btn-outline" style={{width:'auto'}} onClick={() => {
+              setManualCoupon(false);
+              setCouponCode('');
+              setCouponDiscount(0);
+              setCouponFreeShipping(false);
+              setCouponError('');
+            }}>Quitar</button>
+          </div>
+        )}
         <div style={{display:'flex',gap:8}}>
           <input className="form-input" placeholder="Ej: DESCUENTO10" value={couponCode} onChange={e => setCouponCode(e.target.value)} style={{flex:1,marginBottom:0}} />
           <button className="btn btn-primary" style={{width:'auto',padding:'0 20px',marginBottom:0}} onClick={handleApplyCoupon}>Aplicar</button>
         </div>
-        {couponDiscount > 0 && <p style={{color:'var(--success)',marginTop:8,fontSize:14}}>Descuento aplicado: -${couponDiscount.toFixed(2)}</p>}
-        {couponFreeShipping && <p style={{color:'var(--success)',marginTop:8,fontSize:14}}>{'\uD83D\uDE9A'} Envio gratis aplicado</p>}
         {couponError && <p style={{color:'var(--danger)',marginTop:8,fontSize:14}}>{couponError}</p>}
       </div>
 
       {availableCoupons.filter(c => !(c.minPurchase && total < c.minPurchase)).length > 0 && (
         <div className="card" style={{marginTop:10}}>
-          <p style={{fontSize:13,fontWeight:700,color:'var(--gray-500)',marginBottom:8}}>Cupones disponibles para tu compra:</p>
+          <p style={{fontSize:13,fontWeight:700,color:'var(--gray-500)',marginBottom:8}}>Cupones que puedes usar:</p>
           {availableCoupons.filter(c => !(c.minPurchase && total < c.minPurchase)).map(c => (
             <div key={c.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 0',borderBottom:'1px solid var(--gray-100)'}}>
               <div>
@@ -391,7 +434,7 @@ export default function Checkout() {
                   {c.minPurchase > 0 && ` (min $${c.minPurchase})`}
                 </span>
               </div>
-              <button className="btn btn-sm btn-outline" onClick={() => { setCouponCode(c.code); handleApplyCoupon(null, c.code); }}>Usar</button>
+              {manualCoupon && <button className="btn btn-sm btn-outline" onClick={() => { setCouponCode(c.code); handleApplyCoupon(null, c.code); }}>Usar</button>}
             </div>
           ))}
         </div>
