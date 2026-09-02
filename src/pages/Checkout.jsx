@@ -9,9 +9,16 @@ const YAPPY_NUMBER = '62686706';
 const WHATSAPP_NUMBER = '50767238540';
 const IVA_RATE = 0.07;
 const SHIPPING_ZONES = [
-  { value: 'ciudad', label: 'Ciudad de Panama / San Miguelito', cost: 0 },
-  { value: 'oeste', label: 'Panama Oeste', cost: 3 },
-  { value: 'resto', label: 'Resto del pais', cost: 5 },
+  { value: 'panama', label: 'Panama / San Miguelito / Oeste', cost: 2 },
+  { value: 'colon', label: 'Colon', cost: 0 },
+  { value: 'resto', label: 'Resto del pais (mensajeria)', cost: 0 },
+];
+
+const COURIER_OPTIONS = [
+  { value: 'ferguson', label: 'Ferguson / Golden Express', cost: 4 },
+  { value: 'uno', label: 'Uno Express', cost: 5 },
+  { value: 'cia', label: 'CIA Express', cost: 5 },
+  { value: 'olva', label: 'Olva Courier', cost: 6 },
 ];
 
 export default function Checkout() {
@@ -44,8 +51,15 @@ export default function Checkout() {
   const [cardName, setCardName] = useState('');
   const [processingCard, setProcessingCard] = useState(false);
 
-  const [shippingZone, setShippingZone] = useState('ciudad');
-  const shippingCost = SHIPPING_ZONES.find(z => z.value === shippingZone)?.cost || 0;
+  const [shippingZone, setShippingZone] = useState('panama');
+  const [courier, setCourier] = useState('ferguson');
+  const shippingCost = (() => {
+    const zone = SHIPPING_ZONES.find(z => z.value === shippingZone);
+    if (shippingZone === 'resto') {
+      return COURIER_OPTIONS.find(c => c.value === courier)?.cost || 0;
+    }
+    return zone?.cost || 0;
+  })();
 
   const iva = (total + shippingCost) * IVA_RATE;
 
@@ -122,6 +136,7 @@ export default function Checkout() {
         subtotal: total,
         shippingCost: shippingCost,
         shippingZone: shippingZone,
+        courier: shippingZone === 'resto' ? courier : null,
         iva: iva,
         total: finalTotal,
         discount: couponDiscount,
@@ -191,6 +206,10 @@ export default function Checkout() {
   };
 
   const getShippingLabel = () => {
+    if (shippingZone === 'resto') {
+      const c = COURIER_OPTIONS.find(c => c.value === courier);
+      return 'Resto del pais - ' + (c ? c.label : '') + ' ($' + shippingCost.toFixed(2) + ')';
+    }
     const zone = SHIPPING_ZONES.find(z => z.value === shippingZone);
     return zone ? zone.label + (zone.cost === 0 ? ' (Gratis)' : ' ($' + zone.cost.toFixed(2) + ')') : '';
   };
@@ -368,14 +387,24 @@ export default function Checkout() {
         <select className="form-input" value={shippingZone} onChange={e => setShippingZone(e.target.value)}>
           {SHIPPING_ZONES.map(z => (
             <option key={z.value} value={z.value}>
-              {z.label}{z.cost === 0 ? ' (Gratis)' : ' ($' + z.cost.toFixed(2) + ')'}
+              {z.label}{z.cost === 0 && z.value !== 'resto' ? ' (Gratis)' : ''}{z.cost > 0 ? ' ($' + z.cost.toFixed(2) + ')' : ''}
             </option>
           ))}
         </select>
-        {shippingCost > 0 && (
+        {shippingZone === 'resto' && (
+          <>
+            <p style={{fontSize:13,color:'var(--gray-500)',marginTop:10,marginBottom:6}}>Elige la empresa de mensajeria:</p>
+            <select className="form-input" value={courier} onChange={e => setCourier(e.target.value)}>
+              {COURIER_OPTIONS.map(c => (
+                <option key={c.value} value={c.value}>{c.label} (${c.cost.toFixed(2)})</option>
+              ))}
+            </select>
+          </>
+        )}
+        {shippingZone !== 'resto' && shippingCost > 0 && (
           <p style={{color:'var(--gray-500)',fontSize:13,marginTop:8}}>Costo de envio: ${shippingCost.toFixed(2)}</p>
         )}
-        {shippingCost === 0 && (
+        {shippingZone !== 'resto' && shippingCost === 0 && (
           <p style={{color:'var(--success)',fontSize:13,marginTop:8}}>Envio gratis para esta zona</p>
         )}
       </div>

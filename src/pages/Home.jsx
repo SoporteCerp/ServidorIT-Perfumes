@@ -79,7 +79,7 @@ export default function Home() {
   });
 
   const perks = [
-    { icon: '\uD83D\uDE9A', title: 'Envio a todo el pais', desc: 'Panama, Oeste y resto del pais' },
+    { icon: '\uD83D\uDE9A', title: 'Envio a todo el pais', desc: 'Colon gratis, Panama $2' },
     { icon: '\u2705', title: 'Pagos Seguros', desc: 'Yappy y tarjeta' },
     { icon: '\u23F3', title: '2-4 dias', desc: 'De entrega' },
     { icon: '\uD83D\uDCAC', title: 'Atencion', desc: 'Chat en tiempo real' }
@@ -124,7 +124,7 @@ export default function Home() {
           <div>{'\uD83D\uDCCD'} Panama</div>
           <div>{'\uD83D\uDCAC'} Yappy: 6268-6706</div>
           <div>{'\uD83D\uDCF1'} WhatsApp: +507 6723-8540</div>
-          <div>{'\uD83D\uDECD\uFE0F'} Envios a todo el pais</div>
+          <div>{'\uD83D\uDECD\uFE0F'} Envios a Colon gratis, resto del pais por mensajeria</div>
           <div>{'\uD83D\uDD52'} Horario: Lun a Sab 9am - 7pm</div>
         </div>
         <div style={{fontSize:12,color:'#8a7a3a',marginTop:14}}>© {(new Date()).getFullYear()} Esencia Gale. Todos los derechos reservados.</div>
