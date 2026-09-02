@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+﻿import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './services/firebase';
@@ -20,6 +20,7 @@ const Chat = lazy(() => import('./pages/Chat'));
 const Reports = lazy(() => import('./pages/Reports'));
 const StoreLocations = lazy(() => import('./pages/StoreLocations'));
 const Notifications = lazy(() => import('./pages/Notifications'));
+const Wishlist = lazy(() => import('./pages/Wishlist'));
 
 function App() {
   const [user, setUser] = useState(null);
@@ -30,10 +31,10 @@ function App() {
     return unsub;
   }, []);
 
-  if (loading) return <div style={{textAlign:'center',paddingTop:100,fontSize:40}}>⏳</div>;
+  if (loading) return <div style={{textAlign:'center',paddingTop:100,fontSize:40}}>{'\u23F3'}</div>;
 
   const pageLoader = (
-    <div style={{textAlign:'center',paddingTop:80,fontSize:24}}>⏳ Cargando...</div>
+    <div style={{textAlign:'center',paddingTop:80,fontSize:24}}>{'\u23F3'} Cargando...</div>
   );
 
   return (
@@ -56,6 +57,7 @@ function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/inventory" element={<AdminInventory />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/wishlist" element={<Wishlist />} />
             <Route path="/coupons" element={<AdminCoupons />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/reports" element={<Reports />} />

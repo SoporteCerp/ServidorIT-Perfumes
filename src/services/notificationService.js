@@ -1,4 +1,4 @@
-import { collection, onSnapshot, query, where, orderBy, addDoc, getDocs, updateDoc } from 'firebase/firestore';
+﻿import { collection, onSnapshot, query, where, orderBy, addDoc, getDocs, updateDoc } from 'firebase/firestore';
 import { db, auth, messaging } from './firebase';
 import { getUserRole } from './authService';
 import { getToken, onMessage } from 'firebase/messaging';
@@ -17,7 +17,9 @@ export const requestNotificationPermission = async () => {
     if ('Notification' in window) {
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
-        const token = await getToken(messaging, { vapidKey: 'YOUR_VAPID_KEY' });
+        const token = await getToken(messaging, {
+          vapidKey: 'BLx3_Hrh3eDf3dPHr8xP0xk0q4w7a_k1e3nM2cXtYjKmO7rQ9sDvLpNxWbHzA4eG6R2fU8iJ5oK3lM7n'
+        });
         if (token) await saveFCMToken(token);
         return true;
       }
@@ -44,7 +46,7 @@ export const setupForegroundListener = () => {
     const title = payload.notification.title || 'Esencia Gale';
     const body = payload.notification.body || 'Tienes una notificacion';
     if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(title, { body, icon: '/favicon.svg', tag: 'esencia-' + Date.now() });
+      new Notification(title, { body, icon: '/icon-192.png', tag: 'esencia-' + Date.now() });
     }
     showToast(title, body);
   });
@@ -61,7 +63,7 @@ export const showToast = (title, message) => {
     box-shadow: 0 4px 20px rgba(0,0,0,0.3); z-index: 9999; max-width: 90%;
     animation: slideDown 0.3s ease; cursor: pointer; font-size: 14px;
   `;
-  toast.innerHTML = `<strong>${title}</strong><br/>${message}`;
+  toast.innerHTML = '<strong>' + title + '</strong><br/>' + message;
   toast.onclick = () => toast.remove();
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 5000);
@@ -160,7 +162,7 @@ const listenNewOrders = () => {
       if (change.type === 'added' && !shownOrderIds.has(change.doc.id)) {
         shownOrderIds.add(change.doc.id);
         const order = change.doc.data();
-        showToast('Nuevo Pedido', `${order.customerName} - $${order.total}`);
+        showToast('Nuevo Pedido', order.customerName + ' - $' + order.total);
       }
     });
   });
@@ -176,7 +178,7 @@ const listenPendingPayments = () => {
       if (change.type === 'modified' && !shownPaymentIds.has(change.doc.id)) {
         shownPaymentIds.add(change.doc.id);
         const order = change.doc.data();
-        showToast('Pago Pendiente', `${order.customerName} envio comprobante de $${order.total}`);
+        showToast('Pago Pendiente', order.customerName + ' envio comprobante de $' + order.total);
       }
     });
   });
@@ -200,7 +202,7 @@ const listenChatMessages = (userId, role) => {
         if (role === 'admin') {
           if (chat.lastMessage && !chat.lastMessage.startsWith('Admin')) {
             shownChatIds.add(change.doc.id + '_' + Date.now());
-            showToast('Nuevo Mensaje', `${chat.userName || 'Cliente'}: ${chat.lastMessage}`);
+            showToast('Nuevo Mensaje', (chat.userName || 'Cliente') + ': ' + chat.lastMessage);
           }
         } else {
           if (chat.lastMessage && chat.lastMessage.startsWith('Admin')) {

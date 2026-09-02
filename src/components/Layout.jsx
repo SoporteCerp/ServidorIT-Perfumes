@@ -1,20 +1,21 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { auth, db } from '../services/firebase';
 import { logoutUser, getUserRole } from '../services/authService';
 import { getCartCount } from '../services/cartService';
 import { startListening, stopListening, requestNotificationPermission, setupForegroundListener, subscribeToNotifications, clearNotificationType } from '../services/notificationService';
+import { getWishlistCount } from '../services/wishlistService';
 
 const customerNav = [
-  { path: '/', icon: '🛍️', label: 'Catalogo' },
-  { path: '/cart', icon: '🛒', label: 'Carrito' },
-  { path: '/orders', icon: '📦', label: 'Mis Pedidos' },
+  { path: '/', icon: '\uD83D\uDECD\uFE0F', label: 'Catalogo' },
+  { path: '/cart', icon: '\uD83D\uDED2', label: 'Carrito' },
+  { path: '/orders', icon: '\uD83D\uDCE6', label: 'Mis Pedidos' },
 ];
 
 const adminNav = [
-  { path: '/', icon: '🛍️', label: 'Catalogo' },
-  { path: '/dashboard', icon: '📦', label: 'Pedidos y Ventas' },
-  { path: '/inventory', icon: '🧴', label: 'Inventario' },
+  { path: '/', icon: '\uD83D\uDECD\uFE0F', label: 'Catalogo' },
+  { path: '/dashboard', icon: '\uD83D\uDCE6', label: 'Pedidos y Ventas' },
+  { path: '/inventory', icon: '\uD83E\uDDF4', label: 'Inventario' },
 ];
 
 export default function Layout() {
@@ -22,6 +23,7 @@ export default function Layout() {
   const location = useLocation();
   const user = auth.currentUser;
   const [cartCount, setCartCount] = useState(0);
+  const [wishCount, setWishCount] = useState(0);
   const [role, setRole] = useState('customer');
   const [notifCounts, setNotifCounts] = useState({ order: 0, payment: 0, chat: 0 });
   const notifCount = notifCounts.order + notifCounts.payment + notifCounts.chat;
@@ -29,6 +31,7 @@ export default function Layout() {
   useEffect(() => {
     loadRole();
     setCartCount(getCartCount());
+    setWishCount(getWishlistCount());
     requestNotificationPermission();
     setupForegroundListener();
     const unsubNotifs = subscribeToNotifications((type, fn) => {
@@ -67,15 +70,18 @@ export default function Layout() {
           <div>
             <img src="/logo.jpg" alt="Esencia Gale" style={{width:46,height:46,borderRadius:'50%',objectFit:'cover',border:'2px solid var(--primary,#D4AF37)'}} />
             <div className="header-greeting">
-              {role === 'admin' ? '🔧 Admin' : 'Hola'}, {user?.displayName || 'Cliente'}
+              {role === 'admin' ? '\uD83D\uDD27 Admin' : 'Hola'}, {user?.displayName || 'Cliente'}
             </div>
             <div className="header-date">{new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
           </div>
           <div className="header-actions">
-                          <button className="icon-btn" onClick={() => navigate('/cart')}>
-                🛒
-                {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
-              </button>
+            <button className="icon-btn" onClick={() => navigate('/wishlist')}>
+              {'\u2764\uFE0F'}{wishCount > 0 && <span className="cart-badge">{wishCount}</span>}
+            </button>
+            <button className="icon-btn" onClick={() => navigate('/cart')}>
+              {'\uD83D\uDED2'}
+              {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
+            </button>
             <button className="icon-btn" onClick={() => { clearNotificationType('chat'); navigate('/chat'); }}>
               <svg width="20" height="20" viewBox="0 0 32 32" fill="currentColor">
                 <path d="M16.004 3C8.826 3 3 8.827 3 16.004c0 2.29.598 4.523 1.735 6.497L3 29l6.693-1.752A12.92 12.92 0 0 0 16.004 29C23.182 29 29 23.172 29 16.004S23.182 3 16.004 3zm0 23.77a10.8 10.8 0 0 1-5.53-1.516l-.396-.236-4.036 1.056 1.078-3.928-.258-.41A10.78 10.78 0 0 1 5.23 16 10.78 10.78 0 0 1 16.004 5.23 10.78 10.78 0 0 1 26.77 16a10.78 10.78 0 0 1-10.766 10.77z"/>
@@ -83,8 +89,8 @@ export default function Layout() {
               </svg>
               {notifCount > 0 && <span className="cart-badge">{notifCount}</span>}
             </button>
-            <button className="icon-btn" onClick={() => navigate('/profile')}>👤</button>
-            <button className="icon-btn" onClick={handleLogout}>🚪</button>
+            <button className="icon-btn" onClick={() => navigate('/profile')}>{'\uD83D\uDC64'}</button>
+            <button className="icon-btn" onClick={handleLogout}>{'\uD83D\uDEAA'}</button>
           </div>
         </div>
       </header>

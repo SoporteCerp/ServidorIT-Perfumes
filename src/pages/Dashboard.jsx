@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { getDocuments, updateDocument, deleteDocument } from '../services/firestoreService';
 import { sendInvoice } from '../services/emailService';
 
@@ -14,7 +14,7 @@ const statusLabel = {
 
 export default function Dashboard() {
   const [orders, setOrders] = useState([]);
-  const [stats, setStats] = useState({ total: 0, revenue: 0, cost: 0, profit: 0, pending: 0, delivered: 0 });
+  const [stats, setStats] = useState({ total: 0, revenue: 0, cost: 0, profit: 0, pending: 0, delivered: 0, avgDeliveryDays: 0 });
   const [viewingImage, setViewingImage] = useState(null);
   const [loadingAction, setLoadingAction] = useState(null);
 
@@ -26,13 +26,27 @@ export default function Dashboard() {
     const paid = data.filter(o => o.paymentStatus === 'pagado');
     const cost = paid.reduce((s, o) => s + (o.items?.reduce((si, i) => si + ((i.cost ?? i.price) * i.quantity), 0) || 0), 0);
     const revenue = paid.reduce((s, o) => s + (o.total || 0), 0);
+
+    const delivered = data.filter(o => o.status === 'entregado' && o.createdAt?.toDate && o.deliveredAt?.toDate);
+    let avgDeliveryDays = 0;
+    if (delivered.length > 0) {
+      const totalDays = delivered.reduce((s, o) => {
+        const created = new Date(o.createdAt.toDate());
+        const deliveredDate = new Date(o.deliveredAt.toDate());
+        const diff = Math.ceil((deliveredDate - created) / (1000 * 60 * 60 * 24));
+        return s + diff;
+      }, 0);
+      avgDeliveryDays = Math.round((totalDays / delivered.length) * 10) / 10;
+    }
+
     setStats({
       total: data.length,
       revenue,
       cost,
       profit: revenue - cost,
       pending: data.filter(o => o.status === 'pendiente_confirmacion').length,
-      delivered: data.filter(o => o.status === 'entregado').length
+      delivered: data.filter(o => o.status === 'entregado').length,
+      avgDeliveryDays
     });
   };
 
@@ -77,7 +91,7 @@ export default function Dashboard() {
   const markDelivered = async (order) => {
     setLoadingAction(order.id);
     try {
-      await updateDocument('orders', order.id, { status: 'entregado' });
+      await updateDocument('orders', order.id, { status: 'entregado', deliveredAt: new Date() });
       loadData();
     } catch (e) { alert('Error'); }
     finally { setLoadingAction(null); }
@@ -102,7 +116,7 @@ export default function Dashboard() {
   };
 
   const handleDelete = async (order) => {
-    if (!confirm(`¿Eliminar el pedido de ${order.customerName} por $${order.total}? Esta accion no se puede deshacer.`)) return;
+    if (!confirm(`\u00BFEliminar el pedido de ${order.customerName} por $${order.total}? Esta accion no se puede deshacer.`)) return;
     setLoadingAction(order.id);
     try {
       await deleteDocument('orders', order.id);
@@ -111,48 +125,110 @@ export default function Dashboard() {
     finally { setLoadingAction(null); }
   };
 
+  const handlePrint = () => {
+    const pendingOrders = orders.filter(o => o.status === 'pendiente_confirmacion');
+    const deliveredOrders = orders.filter(o => o.status === 'entregado');
+    const allPaid = orders.filter(o => o.paymentStatus === 'pagado');
+    const printContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Reporte Esencia Gale</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; color: #333; }
+    h1 { color: #B8860B; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; }
+    h2 { color: #555; margin-top: 20px; }
+    .stat { display: inline-block; margin: 10px 20px 10px 0; }
+    .stat strong { font-size: 24px; color: #B8860B; display: block; }
+    .stat span { font-size: 12px; color: #888; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 12px; }
+    th { background: #f5f0dc; color: #B8860B; }
+    .footer { margin-top: 30px; text-align: center; color: #999; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <h1>Esencia Gale - Reporte de Ventas</h1>
+  <p>Fecha: ${new Date().toLocaleDateString('es-ES', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}</p>
+  <div class="stat"><strong>${stats.total}</strong><span>Total Pedidos</span></div>
+  <div class="stat"><strong>$${stats.revenue.toFixed(2)}</strong><span>Ingresos</span></div>
+  <div class="stat"><strong>$${stats.profit.toFixed(2)}</strong><span>Ganancia</span></div>
+  <div class="stat"><strong>${stats.delivered}</strong><span>Entregados</span></div>
+  <div class="stat"><strong>${stats.pending}</strong><span>Pendientes</span></div>
+  ${stats.avgDeliveryDays > 0 ? `<div class="stat"><strong>${stats.avgDeliveryDays} dias</strong><span>Prom. Entrega</span></div>` : ''}
+  <h2>Pedidos por Estado</h2>
+  <table>
+    <tr><th>Cliente</th><th>Estado</th><th>Total</th><th>Fecha</th></tr>
+    ${orders.map(o => `<tr><td>${o.customerName || '-'}</td><td>${statusLabel[o.status] || o.status}</td><td>$${(o.total || 0).toFixed(2)}</td><td>${o.createdAt?.toDate ? new Date(o.createdAt.toDate()).toLocaleDateString() : '-'}</td></tr>`).join('')}
+  </table>
+  <div class="footer">Esencia Gale - Sistema de Ventas</div>
+</body>
+</html>`;
+    const win = window.open('', '_blank');
+    win.document.write(printContent);
+    win.document.close();
+    win.print();
+  };
+
   const pendingOrders = orders.filter(o => o.status === 'pendiente_confirmacion');
   const paidOrders = orders.filter(o => o.status === 'pagado' || o.status === 'en_transito' || o.status === 'procesando');
 
   return (
     <>
       <h3 className="section-title mb-15">Dashboard de Ventas</h3>
+
+      <button className="btn btn-outline mb-15" onClick={handlePrint} style={{width:'100%',fontSize:14}}>
+        {'\uD83D\uDDA8\uFE0F'} Imprimir reporte
+      </button>
+
       <div className="stat-grid">
         <div className="stat-card">
-          <span className="stat-icon">📦</span>
+          <span className="stat-icon">{'\uD83D\uDCE6'}</span>
           <div className="stat-number">{stats.total}</div>
           <div className="stat-label">Total Pedidos</div>
         </div>
         <div className="stat-card">
-          <span className="stat-icon">💰</span>
+          <span className="stat-icon">{'\uD83D\uDCB0'}</span>
           <div className="stat-number">${stats.revenue.toFixed(0)}</div>
           <div className="stat-label">Ingresos (ventas)</div>
         </div>
         <div className="stat-card">
-          <span className="stat-icon">🧴</span>
+          <span className="stat-icon">{'\uD83E\uDDF4'}</span>
           <div className="stat-number">${stats.cost.toFixed(0)}</div>
           <div className="stat-label">Costo perfumes</div>
         </div>
         <div className="stat-card">
-          <span className="stat-icon">📈</span>
+          <span className="stat-icon">{'\uD83D\uDCC8'}</span>
           <div className="stat-number">${stats.profit.toFixed(0)}</div>
           <div className="stat-label">Ganancia</div>
         </div>
         <div className="stat-card">
-          <span className="stat-icon">⏳</span>
+          <span className="stat-icon">{'\u23F3'}</span>
           <div className="stat-number">{stats.pending}</div>
           <div className="stat-label">Por Confirmar</div>
         </div>
         <div className="stat-card">
-          <span className="stat-icon">✅</span>
+          <span className="stat-icon">{'\u2705'}</span>
           <div className="stat-number">{stats.delivered}</div>
           <div className="stat-label">Entregados</div>
         </div>
       </div>
 
+      {stats.avgDeliveryDays > 0 && (
+        <div className="delivery-card">
+          <div style={{display:'flex',alignItems:'center',gap:12}}>
+            <div>
+              <div className="delivery-number">{stats.avgDeliveryDays} dias</div>
+              <div className="delivery-label">Tiempo promedio de entrega</div>
+            </div>
+            <div style={{marginLeft:'auto',fontSize:32}}>{'\uD83D\uDE9A'}</div>
+          </div>
+        </div>
+      )}
+
       {pendingOrders.length > 0 && (
         <>
-          <h3 className="section-title mb-15" style={{color:'var(--warning)'}}>⏳ Pagos Pendientes ({pendingOrders.length})</h3>
+          <h3 className="section-title mb-15" style={{color:'var(--warning)'}}>{'\u23F3'} Pagos Pendientes ({pendingOrders.length})</h3>
           {pendingOrders.map(order => (
             <div key={order.id} className="card" style={{borderLeft:'4px solid var(--warning)'}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
@@ -201,7 +277,7 @@ export default function Dashboard() {
                   onClick={() => confirmPayment(order)}
                   disabled={loadingAction === order.id}
                 >
-                  {loadingAction === order.id ? '...' : '✓ Confirmar Pago'}
+                  {loadingAction === order.id ? '...' : '\u2713 Confirmar Pago'}
                 </button>
                 <button 
                   className="btn btn-danger btn-sm" 
@@ -219,31 +295,31 @@ export default function Dashboard() {
 
       {paidOrders.length > 0 && (
         <>
-          <h3 className="section-title mb-15" style={{marginTop:20}}>✅ Pagos Confirmados</h3>
+          <h3 className="section-title mb-15" style={{marginTop:20}}>{'\u2705'} Pagos Confirmados</h3>
           {paidOrders.map(order => (
             <div key={order.id} className="order-card" style={{borderLeft:'4px solid var(--success)'}}>
               <div className="order-header">
                 <span className="order-number">{order.customerName}</span>
                 <span className={`badge badge-${order.status}`}>{statusLabel[order.status] || order.status}</span>
               </div>
-              <div className="order-items">{order.items?.length} productos · ${order.total?.toFixed(2)}</div>
+              <div className="order-items">{order.items?.length} productos {'\u00B7'} ${order.total?.toFixed(2)}</div>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:8}}>
                 <span style={{fontSize:12,color:'var(--gray-400)'}}>
                   {order.createdAt?.toDate ? new Date(order.createdAt.toDate()).toLocaleDateString() : ''}
                 </span>
                 {order.status === 'pagado' && (
                   <button className="btn btn-sm btn-outline" onClick={() => markProcessing(order)} disabled={loadingAction === order.id}>
-                    🔧 En proceso
+                    {'\uD83D\uDD27'} En proceso
                   </button>
                 )}
                 {order.status === 'procesando' && (
                   <button className="btn btn-sm btn-outline" onClick={() => markInTransit(order)} disabled={loadingAction === order.id}>
-                    🚚 En camino
+                    {'\uD83D\uDE9A'} En camino
                   </button>
                 )}
                 {order.status === 'en_transito' && (
                   <button className="btn btn-sm btn-outline" onClick={() => markDelivered(order)} disabled={loadingAction === order.id}>
-                    ✓ Marcar Entregado
+                    {'\u2713'} Marcar Entregado
                   </button>
                 )}
               </div>
@@ -254,7 +330,7 @@ export default function Dashboard() {
 
       {orders.length > 0 && (
         <>
-          <h3 className="section-title mb-15" style={{marginTop:20}}>📋 Todos los Pedidos ({orders.length})</h3>
+          <h3 className="section-title mb-15" style={{marginTop:20}}>{'\uD83D\uDCCB'} Todos los Pedidos ({orders.length})</h3>
           {orders.map(order => {
             const st = statusLabel[order.status] || order.status;
             return (
@@ -280,7 +356,7 @@ export default function Dashboard() {
                   disabled={loadingAction === order.id}
                   style={{width:'100%',marginTop:10,padding:'6px 12px',fontSize:12,color:'#EF4444',borderColor:'#FECACA'}}
                 >
-                  {loadingAction === order.id ? '...' : '🗑 Eliminar'}
+                  {loadingAction === order.id ? '...' : '\uD83D\uDDD1 Eliminar'}
                 </button>
               </div>
             );

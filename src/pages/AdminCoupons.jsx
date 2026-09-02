@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { getCoupons, addCoupon, deleteCoupon } from '../services/couponService';
 
 export default function AdminCoupons() {
@@ -19,10 +19,11 @@ export default function AdminCoupons() {
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    if (!code || !discount) { alert('Codigo y descuento obligatorios'); return; }
+    if (!code) { alert('Codigo obligatorio'); return; }
+    if (type !== 'free_shipping' && !discount) { alert('Descuento obligatorio'); return; }
     setLoading(true);
     try {
-      await addCoupon(code, parseFloat(discount), type, parseFloat(minPurchase) || 0);
+      await addCoupon(code, type === 'free_shipping' ? 0 : parseFloat(discount), type, parseFloat(minPurchase) || 0);
       setModalOpen(false);
       setCode(''); setDiscount(''); setMinPurchase('');
       loadCoupons();
@@ -43,20 +44,26 @@ export default function AdminCoupons() {
     loadCoupons();
   };
 
+  const couponTypeLabel = (c) => {
+    if (c.type === 'free_shipping') return 'Envio Gratis';
+    if (c.type === 'percentage') return `${c.discount}% off`;
+    return `$${c.discount} off`;
+  };
+
   return (
     <>
       <h3 className="section-title mb-15">Cupones de Descuento</h3>
 
       {coupons.length === 0 ? (
-        <div className="empty-state"><div className="empty-icon">🏷️</div><div className="empty-text">No hay cupones</div></div>
+        <div className="empty-state"><div className="empty-icon">{'\uD83C\uDFF7\uFE0F'}</div><div className="empty-text">No hay cupones</div></div>
       ) : coupons.map(c => (
         <div key={c.id} className="admin-card" style={!c.active ? {opacity:0.5} : {}}>
           <div className="admin-header">
             <div>
               <div className="admin-name" style={{fontSize:18,fontWeight:700,color:'var(--primary)'}}>{c.code}</div>
               <div className="admin-brand">
-                {c.type === 'percentage' ? `${c.discount}% off` : `$${c.discount} off`}
-                {c.minPurchase > 0 && ` · Min $${c.minPurchase}`}
+                {couponTypeLabel(c)}
+                {c.minPurchase > 0 && ` \u00B7 Min $${c.minPurchase}`}
               </div>
               <div className="admin-brand">Usado {c.usedCount || 0} veces</div>
             </div>
@@ -78,12 +85,14 @@ export default function AdminCoupons() {
             <h2 className="modal-title">Nuevo Cupon</h2>
             <form onSubmit={handleAdd}>
               <div className="form-group"><input className="form-input" placeholder="Codigo (ej: DESCUENTO10)" value={code} onChange={e => setCode(e.target.value.toUpperCase())} /></div>
-              <div className="form-group"><input className="form-input" placeholder="Descuento" type="number" value={discount} onChange={e => setDiscount(e.target.value)} /></div>
               <div className="chip-row">
-                {[{v:'percentage',l:'Porcentaje %'},{v:'fixed',l:'Monto $'}].map(t => (
+                {[{v:'percentage',l:'Porcentaje %'},{v:'fixed',l:'Monto $'},{v:'free_shipping',l:'Envio Gratis'}].map(t => (
                   <button key={t.v} type="button" className={`chip ${type === t.v ? 'active' : ''}`} onClick={() => setType(t.v)}>{t.l}</button>
                 ))}
               </div>
+              {type !== 'free_shipping' && (
+                <div className="form-group"><input className="form-input" placeholder="Descuento" type="number" value={discount} onChange={e => setDiscount(e.target.value)} /></div>
+              )}
               <div className="form-group"><input className="form-input" placeholder="Compra minima (opcional)" type="number" value={minPurchase} onChange={e => setMinPurchase(e.target.value)} /></div>
               <div className="modal-actions">
                 <button type="button" className="btn btn-outline" onClick={() => setModalOpen(false)}>Cancelar</button>

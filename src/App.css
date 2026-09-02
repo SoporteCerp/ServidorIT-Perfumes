@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   --primary: #D4AF37;
   --primary-dark: #B8860B;
   --secondary: #8B6508;
@@ -923,3 +923,38 @@ body {
 .dark-mode .tracker-dot { background: #0a0a0a !important; border-color: #4a3f1f !important; color: #8a7d4d !important; }
 .dark-mode .tracker-step-label { color: #8a7d4d !important; }
 .dark-mode .tracker-step-desc { color: #8a7d4d !important; }
+/* skeletons */
+.skeleton-pulse {
+  background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-200) 50%, var(--gray-100) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s infinite;
+  border-radius: 6px;
+}
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.skeleton-card {
+  background: #fff;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.skeleton-img { width: 100%; height: 160px; }
+.skeleton-line { margin-bottom: 6px; }
+.dark-mode .skeleton-card { background: #17120a; }
+.dark-mode .skeleton-pulse { background: linear-gradient(90deg, #1a1400 25%, #2a2418 50%, #1a1400 75%); background-size: 200% 100%; }
+
+/* reviews */
+.reviews-section { margin-top: 20px; }
+.review-form textarea { font-size: 13px; }
+.review-card { background: #fff; padding: 12px; border-radius: 10px; }
+
+/* delivery metrics */
+.delivery-card { background: linear-gradient(135deg, #f0fdf4, #dcfce7); border: 1px solid #bbf7d0; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+.delivery-number { font-size: 28px; font-weight: 700; color: #059669; }
+.delivery-label { font-size: 13px; color: #059669; font-weight: 500; }
+.dark-mode .delivery-card { background: linear-gradient(135deg, #0d1a0d, #1a2e1a) !important; border-color: #2a4a2a !important; }
+.dark-mode .delivery-number { color: #4ade80 !important; }
+.dark-mode .delivery-label { color: #4ade80 !important; }
+.dark-mode .review-card { background: #17120a !important; }

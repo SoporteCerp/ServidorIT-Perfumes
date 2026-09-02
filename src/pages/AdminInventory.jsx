@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { getDocuments, addDocument, updateDocument, deleteDocument } from '../services/firestoreService';
 import { recordPrice } from '../services/priceHistoryService';
 import { uploadProductImage } from '../services/storageService';
 
-const defaultForm = { name: '', brand: '', price: '', cost: '', stock: '', category: 'unisex', description: '', image: '', images: [] };
+const defaultForm = { name: '', brand: '', price: '', cost: '', stock: '', minStock: '', category: 'unisex', description: '', image: '', images: [] };
 
 export default function AdminInventory() {
   const [products, setProducts] = useState([]);
@@ -25,7 +25,7 @@ export default function AdminInventory() {
   const openEdit = (p) => {
     const imgs = Array.isArray(p.images) && p.images.length > 0 ? p.images : (p.image ? [p.image] : []);
     setEditingId(p.id);
-    setForm({ name: p.name, brand: p.brand, price: p.price, cost: p.cost ?? '', stock: p.stock, category: p.category, description: p.description || '', image: imgs[0] || '', images: imgs });
+    setForm({ name: p.name, brand: p.brand, price: p.price, cost: p.cost ?? '', stock: p.stock, minStock: p.minStock ?? '', category: p.category, description: p.description || '', image: imgs[0] || '', images: imgs });
     setImagePreview(imgs[0] || null);
     setModalOpen(true);
   };
@@ -72,7 +72,7 @@ export default function AdminInventory() {
       for (let i = 0; i < rawImgs.length; i++) {
         uploaded.push(await uploadProductImage(rawImgs[i], i));
       }
-      const data = { ...form, images: uploaded, image: uploaded[0] || '', price: parseFloat(form.price), cost: form.cost ? parseFloat(form.cost) : parseFloat(form.price), stock: parseInt(form.stock) || 0 };
+      const data = { ...form, images: uploaded, image: uploaded[0] || '', price: parseFloat(form.price), cost: form.cost ? parseFloat(form.cost) : parseFloat(form.price), stock: parseInt(form.stock) || 0, minStock: parseInt(form.minStock) || 0 };
       if (editingId) {
         const oldProduct = products.find(p => p.id === editingId);
         if (oldProduct && oldProduct.price !== data.price) {
@@ -112,39 +112,44 @@ export default function AdminInventory() {
       <h3 className="section-title mb-15">Inventario de Perfumes</h3>
 
       {products.length === 0 ? (
-        <div className="empty-state"><div className="empty-icon">🧴</div><div className="empty-text">No hay productos</div></div>
-      ) : products.map(p => (
-        <div key={p.id} className="admin-card" style={!p.active ? {opacity:0.5} : {}}>
-          <div style={{display:'flex',gap:12,alignItems:'flex-start'}}>
-            <div style={{width:60,height:60,borderRadius:10,background:'linear-gradient(135deg, #f3e8ff, #fce7f3)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:28,flexShrink:0,overflow:'hidden'}}>
-              {p.image ? <img src={p.image} alt={p.name} style={{width:'100%',height:'100%',objectFit:'cover'}} /> : '🧴'}
+        <div className="empty-state"><div className="empty-icon">{'\uD83E\uDDF4'}</div><div className="empty-text">No hay productos</div></div>
+      ) : products.map(p => {
+        const isLowStock = p.minStock && p.stock <= p.minStock;
+        return (
+          <div key={p.id} className="admin-card" style={!p.active ? {opacity:0.5} : {}}>
+            <div style={{display:'flex',gap:12,alignItems:'flex-start'}}>
+              <div style={{width:60,height:60,borderRadius:10,background:'linear-gradient(135deg, #f3e8ff, #fce7f3)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:28,flexShrink:0,overflow:'hidden'}}>
+                {p.image ? <img src={p.image} alt={p.name} style={{width:'100%',height:'100%',objectFit:'cover'}} /> : '\uD83E\uDDF4'}
+              </div>
+              <div style={{flex:1}}>
+                <div className="admin-name">{p.name}</div>
+                <div className="admin-brand">{p.brand} {'\u00B7'} {p.category}</div>
+                <div className="admin-price">${p.price}</div>
+                <div style={{fontSize:12,color:'var(--gray-400)'}}>Costo: ${p.cost ?? p.price}</div>
+              </div>
+              {isLowStock && <span style={{fontSize:18,color:'var(--danger)',fontWeight:700}} title={'Stock bajo! Minimo: ' + (p.minStock || 0)}>{'\u26A0\uFE0F'}</span>}
             </div>
-            <div style={{flex:1}}>
-              <div className="admin-name">{p.name}</div>
-              <div className="admin-brand">{p.brand} · {p.category}</div>
-              <div className="admin-price">${p.price}</div>
-              <div style={{fontSize:12,color:'var(--gray-400)'}}>Costo: ${p.cost ?? p.price}</div>
-            </div>
-          </div>
-          <div className="stock-row" style={{marginTop:10}}>
-            <div style={{display:'flex',alignItems:'center',gap:10}}>
-              <span style={{fontSize:13,color:'var(--gray-500)',fontWeight:600}}>Stock</span>
-              <div className="catalog-qty">
-                <button onClick={() => updateStock(p.id, p.stock, 'subtract')}>-</button>
-                <span>{p.stock}</span>
-                <button onClick={() => updateStock(p.id, p.stock, 'add')}>+</button>
+            <div className="stock-row" style={{marginTop:10}}>
+              <div style={{display:'flex',alignItems:'center',gap:10}}>
+                <span style={{fontSize:13,color:'var(--gray-500)',fontWeight:600}}>Stock</span>
+                <div className="catalog-qty">
+                  <button onClick={() => updateStock(p.id, p.stock, 'subtract')}>-</button>
+                  <span>{p.stock}</span>
+                  <button onClick={() => updateStock(p.id, p.stock, 'add')}>+</button>
+                </div>
+                {isLowStock && <span style={{fontSize:11,color:'var(--danger)',fontWeight:500}}>Min: {p.minStock}</span>}
+              </div>
+              <div style={{display:'flex',gap:8}}>
+                <button className="btn btn-sm btn-primary" onClick={() => openEdit(p)}>Editar</button>
+                <button className={`btn btn-sm ${p.active ? 'btn-outline' : 'btn-success'}`} onClick={() => toggleActive(p.id, p.active)}>
+                  {p.active ? 'Desactivar' : 'Activar'}
+                </button>
+                <button className="btn btn-sm btn-danger" onClick={() => handleDelete(p.id, p.name)}>Eliminar</button>
               </div>
             </div>
-            <div style={{display:'flex',gap:8}}>
-              <button className="btn btn-sm btn-primary" onClick={() => openEdit(p)}>Editar</button>
-              <button className={`btn btn-sm ${p.active ? 'btn-outline' : 'btn-success'}`} onClick={() => toggleActive(p.id, p.active)}>
-                {p.active ? 'Desactivar' : 'Activar'}
-              </button>
-              <button className="btn btn-sm btn-danger" onClick={() => handleDelete(p.id, p.name)}>Eliminar</button>
-            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       <button className="fab" onClick={openAdd}>+</button>
 
@@ -157,7 +162,10 @@ export default function AdminInventory() {
               <div className="form-group"><input className="form-input" placeholder="Marca *" value={form.brand} onChange={e => setForm({...form, brand: e.target.value})} /></div>
               <div className="form-group"><input className="form-input" placeholder="Precio de venta *" type="number" value={form.price} onChange={e => setForm({...form, price: e.target.value})} /></div>
               <div className="form-group"><input className="form-input" placeholder="Costo (precio de compra)" type="number" value={form.cost} onChange={e => setForm({...form, cost: e.target.value})} /></div>
-              <div className="form-group"><input className="form-input" placeholder="Stock" type="number" value={form.stock} onChange={e => setForm({...form, stock: e.target.value})} /></div>
+              <div style={{display:'flex',gap:10}}>
+                <div className="form-group" style={{flex:1}}><input className="form-input" placeholder="Stock" type="number" value={form.stock} onChange={e => setForm({...form, stock: e.target.value})} /></div>
+                <div className="form-group" style={{flex:1}}><input className="form-input" placeholder="Stock minimo" type="number" value={form.minStock} onChange={e => setForm({...form, minStock: e.target.value})} /></div>
+              </div>
               <div className="chip-row">
                 {[{v:'hombre',l:'Hombre'},{v:'mujer',l:'Mujer'},{v:'unisex',l:'Unisex'},{v:'ofertas',l:'Ofertas'},{v:'nuevos',l:'Nuevos'},{v:'importados',l:'Importados'}].map(c => (
                   <button key={c.v} type="button" className={`chip ${form.category === c.v ? 'active' : ''}`} onClick={() => setForm({...form, category: c.v})}>{c.l}</button>
@@ -167,17 +175,17 @@ export default function AdminInventory() {
                 <label className="form-label">Fotos del producto (puedes agregar varias)</label>
                 <div style={{display:'flex',gap:10,alignItems:'center',flexWrap:'wrap'}}>
                   <label className="btn btn-sm btn-outline" style={{cursor:'pointer'}}>
-                    📷 + Agregar fotos
+                    {'\uD83D\uDCF7'} + Agregar fotos
                     <input type="file" accept="image/*" multiple onChange={handleImageChange} style={{display:'none'}} />
                   </label>
-                  {(form.images || []).length > 0 && <span style={{fontSize:12,color:'var(--success)'}}>✓ {(form.images || []).length} foto(s)</span>}
+                  {(form.images || []).length > 0 && <span style={{fontSize:12,color:'var(--success)'}}>{'\u2713'} {(form.images || []).length} foto(s)</span>}
                 </div>
                 {(form.images || []).length > 0 && (
                   <div style={{display:'flex',gap:8,marginTop:10,flexWrap:'wrap'}}>
                     {(form.images || []).map((img, idx) => (
                       <div key={idx} style={{position:'relative',width:64,height:64}}>
                         <img src={img} alt={`foto ${idx + 1}`} style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:8,border:'1px solid var(--gray-200)'}} />
-                        <button type="button" onClick={() => removeImage(idx)} style={{position:'absolute',top:-6,right:-6,width:20,height:20,borderRadius:'50%',background:'var(--danger)',color:'#fff',border:'none',fontSize:11,lineHeight:1,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
+                        <button type="button" onClick={() => removeImage(idx)} style={{position:'absolute',top:-6,right:-6,width:20,height:20,borderRadius:'50%',background:'var(--danger)',color:'#fff',border:'none',fontSize:11,lineHeight:1,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>{'\u2715'}</button>
                       </div>
                     ))}
                   </div>

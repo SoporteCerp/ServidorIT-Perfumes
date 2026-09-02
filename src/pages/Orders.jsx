@@ -1,20 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { getDocuments, deleteDocument } from '../services/firestoreService';
+﻿import React, { useState, useEffect, useRef } from 'react';
+import { getDocuments, deleteDocument, updateDocument } from '../services/firestoreService';
 import { auth } from '../services/firebase';
 import OrderTracker from '../components/OrderTracker';
 
 const statusConfig = {
-  pendiente_confirmacion: { label: 'Esperando confirmacion', icon: '⏳', color: '#F59E0B', message: 'Tu comprobante esta siendo revisado' },
-  en_transito: { label: 'Pendiente de entrega', icon: '📦', color: '#3B82F6', message: 'Tu pago fue confirmado y tu pedido esta en camino' },
-  pagado: { label: 'Pago confirmado', icon: '✅', color: '#10B981', message: 'Tu pago fue verificado exitosamente' },
-  rechazado: { label: 'Pago no verificado', icon: '❌', color: '#EF4444', message: 'El comprobante no pudo ser verificado. Contactanos.' },
-  procesando: { label: 'En proceso', icon: '🔧', color: '#3B82F6', message: 'Tu pedido esta siendo preparado' },
-  entregado: { label: 'Entregado', icon: '🎉', color: '#059669', message: 'Tu pedido fue entregado' },
-  pendiente: { label: 'Pendiente', icon: '⏳', color: '#F59E0B', message: 'Esperando pago' }
+  pendiente_confirmacion: { label: 'Esperando confirmacion', icon: '\u23F3', color: '#F59E0B', message: 'Tu comprobante esta siendo revisado' },
+  en_transito: { label: 'Pendiente de entrega', icon: '\uD83D\uDCE6', color: '#3B82F6', message: 'Tu pago fue confirmado y tu pedido esta en camino' },
+  pagado: { label: 'Pago confirmado', icon: '\u2705', color: '#10B981', message: 'Tu pago fue verificado exitosamente' },
+  rechazado: { label: 'Pago no verificado', icon: '\u274C', color: '#EF4444', message: 'El comprobante no pudo ser verificado. Contactanos.' },
+  procesando: { label: 'En proceso', icon: '\uD83D\uDD27', color: '#3B82F6', message: 'Tu pedido esta siendo preparado' },
+  entregado: { label: 'Entregado', icon: '\uD83C\uDF89', color: '#059669', message: 'Tu pedido fue entregado' },
+  pendiente: { label: 'Pendiente', icon: '\u23F3', color: '#F59E0B', message: 'Esperando pago' }
 };
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
+  const [resubmitting, setResubmitting] = useState(null);
+  const [newScreenshot, setNewScreenshot] = useState(null);
+  const [newRef, setNewRef] = useState('');
+  const [resubmitOrder, setResubmitOrder] = useState(null);
+  const fileRef = useRef(null);
 
   useEffect(() => { loadOrders(); }, []);
 
@@ -24,28 +29,56 @@ export default function Orders() {
   };
 
   const handleDelete = async (orderId) => {
-    if (!window.confirm('¿Eliminar este pedido?')) return;
+    if (!window.confirm('\u00BFEliminar este pedido?')) return;
     try {
       await deleteDocument('orders', orderId);
       setOrders(prev => prev.filter(o => o.id !== orderId));
     } catch {}
   };
 
+  const handleResubmit = async (order) => {
+    if (!newScreenshot) { alert('Sube un comprobante'); return; }
+    if (!newRef.trim()) { alert('Escribe la referencia'); return; }
+    setResubmitting(order.id);
+    try {
+      await updateDocument('orders', order.id, {
+        screenshot: newScreenshot,
+        reference: newRef.trim(),
+        status: 'pendiente_confirmacion',
+        paymentStatus: 'pendiente'
+      });
+      setNewScreenshot(null);
+      setNewRef('');
+      setResubmitOrder(null);
+      loadOrders();
+    } catch { alert('Error al reenviar'); }
+    setResubmitting(null);
+  };
+
+  const handleImagePick = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 800000) { alert('Imagen maximo 800KB'); return; }
+    const reader = new FileReader();
+    reader.onload = (ev) => setNewScreenshot(ev.target.result);
+    reader.readAsDataURL(file);
+  };
+
   return (
     <>
       <h3 className="section-title mb-15">Mis Pedidos</h3>
       {orders.length === 0 ? (
-        <div className="empty-state"><div className="empty-icon">📦</div><div className="empty-text">No tienes pedidos</div></div>
+        <div className="empty-state"><div className="empty-icon">{'\uD83D\uDCE6'}</div><div className="empty-text">No tienes pedidos</div></div>
       ) : orders.map(order => {
         const status = statusConfig[order.status] || statusConfig.pendiente;
         return (
-          <div key={order.id} className="order-card" style={{borderLeft:`4px solid ${status.color}`}}>
+          <div key={order.id} className="order-card" style={{borderLeft:'4px solid ' + status.color}}>
             <div className="order-header">
               <span className="order-number">Pedido #{order.id?.slice(0,8).toUpperCase()}</span>
               <span className="badge" style={{background:status.color}}>{status.label}</span>
             </div>
 
-            <div style={{background:`${status.color}15`,borderRadius:8,padding:12,marginBottom:12}}>
+            <div style={{background:status.color + '15',borderRadius:8,padding:12,marginBottom:12}}>
               <span style={{fontSize:18,marginRight:8}}>{status.icon}</span>
               <span style={{fontSize:14,color:status.color,fontWeight:500}}>{status.message}</span>
             </div>
@@ -65,21 +98,33 @@ export default function Orders() {
               </span>
             </div>
 
+            {order.status === 'rechazado' && (
+              <div style={{marginTop:10,background:'#FEE2E2',borderRadius:8,padding:12}}>
+                <p style={{fontSize:13,color:'#EF4444',fontWeight:500}}>
+                  Tu pago no pudo ser verificado. Sube un nuevo comprobante:
+                </p>
+                <input type="file" ref={fileRef} accept="image/*" style={{display:'none'}} onChange={handleImagePick} />
+                <button className="btn btn-sm btn-outline" style={{marginTop:8}} onClick={() => { setResubmitOrder(order.id); fileRef.current?.click(); }}>
+                  {newScreenshot && resubmitOrder === order.id ? '\u2713 Comprobante listo' : '\uD83D\uDCF8 Subir comprobante'}
+                </button>
+                {newScreenshot && resubmitOrder === order.id && (
+                  <>
+                    <input className="form-input" placeholder="Referencia Yappy" value={newRef} onChange={e => setNewRef(e.target.value)} style={{marginTop:8}} />
+                    <button className="btn btn-sm btn-primary" style={{marginTop:8,width:'100%'}} onClick={() => handleResubmit(order)} disabled={resubmitting === order.id}>
+                      {resubmitting === order.id ? 'Enviando...' : '\u2713 Reenviar comprobante'}
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+
             <button
               className="btn btn-outline"
               onClick={() => handleDelete(order.id)}
               style={{width:'100%',marginTop:10,padding:'6px 12px',fontSize:12,color:'#EF4444',borderColor:'#FECACA'}}
             >
-              🗑 Eliminar pedido
+              {'\uD83D\uDDD1'} Eliminar pedido
             </button>
-
-            {order.status === 'rechazado' && (
-              <div style={{marginTop:10,background:'#FEE2E2',borderRadius:8,padding:12}}>
-                <p style={{fontSize:13,color:'#EF4444',fontWeight:500}}>
-                  Tu pago no pudo ser verificado. Por favor contactanos para mas informacion.
-                </p>
-              </div>
-            )}
           </div>
         );
       })}

@@ -1,4 +1,4 @@
-import { getDocuments, addDocument, updateDocument, deleteDocument } from './firestoreService';
+﻿import { getDocuments, addDocument, updateDocument, deleteDocument } from './firestoreService';
 
 export const getCoupons = async () => {
   return await getDocuments('coupons', [], 'code', 'asc');
@@ -25,7 +25,10 @@ export const validateCoupon = async (code, cartTotal) => {
     return { valid: false, error: 'Codigo expirado' };
   }
   if (coupon.minPurchase && cartTotal < coupon.minPurchase) {
-    return { valid: false, error: `Compra minima $${coupon.minPurchase}` };
+    return { valid: false, error: 'Compra minima $' + coupon.minPurchase };
+  }
+  if (coupon.type === 'free_shipping') {
+    return { valid: true, discount: 0, freeShipping: true, coupon };
   }
   const discount = coupon.type === 'percentage' ? (cartTotal * coupon.discount / 100) : coupon.discount;
   return { valid: true, discount, coupon };
