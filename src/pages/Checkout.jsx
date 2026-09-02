@@ -100,16 +100,17 @@ export default function Checkout() {
     }
   };
 
-  const handleImageChange = (e) => {
+  const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (file.size > 800000) { alert('La imagen es muy grande. Maximo 800KB.'); return; }
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setScreenshot(ev.target.result);
-      setScreenshotPreview(ev.target.result);
-    };
-    reader.readAsDataURL(file);
+    const { compressImage } = await import('../services/imageUtils');
+    const compressed = await compressImage(file, 700, 0.6);
+    if (compressed) {
+      setScreenshot(compressed);
+      setScreenshotPreview(compressed);
+    } else {
+      alert('No se pudo procesar la imagen');
+    }
   };
 
   const handleOrder = async () => {

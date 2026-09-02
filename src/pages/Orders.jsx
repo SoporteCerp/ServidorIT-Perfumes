@@ -55,13 +55,13 @@ export default function Orders() {
     setResubmitting(null);
   };
 
-  const handleImagePick = (e) => {
+  const handleImagePick = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (file.size > 800000) { alert('Imagen maximo 800KB'); return; }
-    const reader = new FileReader();
-    reader.onload = (ev) => setNewScreenshot(ev.target.result);
-    reader.readAsDataURL(file);
+    const { compressImage } = await import('../services/imageUtils');
+    const compressed = await compressImage(file, 700, 0.6);
+    if (compressed) setNewScreenshot(compressed);
+    else alert('No se pudo procesar la imagen');
   };
 
   return (
