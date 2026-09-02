@@ -1,9 +1,10 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCart, getCartTotal, clearCart } from '../services/cartService';
-import { addDocument, getDocuments } from '../services/firestoreService';
+import { addDocument, getDocuments, updateDocument } from '../services/firestoreService';
 import { auth } from '../services/firebase';
-import { validateCoupon, getCoupons, getBestCoupon } from '../services/couponService';
+import { getCoupons, getBestCoupon } from '../services/couponService';
+import { compressImage } from '../services/imageUtils';
 
 const YAPPY_NUMBER = '62686706';
 const WHATSAPP_NUMBER = '50767238540';
@@ -42,9 +43,7 @@ export default function Checkout() {
   const [couponCode, setCouponCode] = useState('');
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponFreeShipping, setCouponFreeShipping] = useState(false);
-  const [couponError, setCouponError] = useState('');
   const [availableCoupons, setAvailableCoupons] = useState([]);
-  const [manualCoupon, setManualCoupon] = useState(false);
   const [finalTotal, setFinalTotal] = useState(0);
 
   const [paymentMethod, setPaymentMethod] = useState('yappy');
@@ -70,7 +69,6 @@ export default function Checkout() {
   }, []);
 
   useEffect(() => {
-    if (manualCoupon) return;
     let mounted = true;
     getBestCoupon(total, shippingCost).then(best => {
       if (!mounted) return;
@@ -83,16 +81,14 @@ export default function Checkout() {
           setCouponFreeShipping(false);
           setCouponDiscount(best.saving);
         }
-        setCouponError('');
       } else {
         setCouponFreeShipping(false);
         setCouponDiscount(0);
         setCouponCode('');
-        setCouponError('');
       }
     }).catch(() => {});
     return () => { mounted = false; };
-  }, [total, shippingCost, shippingZone, courier, manualCoupon]);
+  }, [total, shippingCost, shippingZone, courier]);
 
   const loadProfile = async () => {
     try {
@@ -129,33 +125,9 @@ export default function Checkout() {
     setFinalTotal(recalcTotal(total, couponDiscount, shippingZone, couponFreeShipping));
   }, [shippingZone, total, couponDiscount, couponFreeShipping]);
 
-  const handleApplyCoupon = async (ignore, codeToUse) => {
-    const code = codeToUse || couponCode;
-    if (!code.trim()) { setCouponError('Escribe un codigo'); return; }
-    setManualCoupon(true);
-    const result = await validateCoupon(code, total);
-    if (result.valid) {
-      if (result.freeShipping) {
-        setCouponFreeShipping(true);
-        setCouponDiscount(0);
-      } else {
-        setCouponFreeShipping(false);
-        setCouponDiscount(result.discount);
-      }
-      setFinalTotal(recalcTotal(total, result.freeShipping ? 0 : result.discount, shippingZone, result.freeShipping));
-      setCouponError('');
-    } else {
-      setCouponDiscount(0);
-      setCouponFreeShipping(false);
-      setFinalTotal(recalcTotal(total, 0, shippingZone, false));
-      setCouponError(result.error);
-    }
-  };
-
   const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const { compressImage } = await import('../services/imageUtils');
     const compressed = await compressImage(file, 700, 0.6);
     if (compressed) {
       setScreenshot(compressed);
@@ -206,7 +178,6 @@ export default function Checkout() {
     if (!reference.trim()) { alert('Escribe el numero de referencia'); return; }
     setUploading(true);
     try {
-      const { updateDocument } = await import('../services/firestoreService');
       await updateDocument('orders', orderId, {
         screenshot,
         reference: reference.trim(),
@@ -224,6 +195,15 @@ export default function Checkout() {
     }
     const zone = SHIPPING_ZONES.find(z => z.value === shippingZone);
     return zone ? zone.label + (zone.cost === 0 ? ' (Gratis)' : ' ($' + zone.cost.toFixed(2) + ')') : '';
+  };
+
+  const getNextCouponHint = () => {
+    const next = (availableCoupons || [])
+      .filter(c => c.active && !(c.minPurchase && total >= c.minPurchase))
+      .sort((a, b) => (a.minPurchase || 0) - (b.minPurchase || 0))[0];
+    if (!next || (next.minPurchase && total >= next.minPurchase)) return null;
+    const label = next.type === 'free_shipping' ? 'env\u00EDo gratis' : next.type === 'percentage' ? `${next.discount}% de descuento` : `$${next.discount} de descuento`;
+    return { minPurchase: next.minPurchase || 0, label };
   };
 
   if (step === 'done') {
@@ -395,50 +375,30 @@ export default function Checkout() {
         </div>
       </div>
 
-      <h3 className="section-title mb-15">Codigo de Descuento</h3>
+      <h3 className="section-title mb-15">Descuento</h3>
       <div className="card">
-        {(couponDiscount > 0 || couponFreeShipping) && (
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
-            <div>
-              <p style={{color:'var(--success)',fontSize:14}}>
-                {!manualCoupon && <span style={{fontWeight:600}}>{'\uD83C\uDF89'} Descuento autom\u00E1tico aplicado: </span>}
-                {couponFreeShipping ? 'Envio gratis' : couponDiscount > 0 ? `-$${couponDiscount.toFixed(2)}` : ''}
-                <span style={{color:'var(--gray-500)',marginLeft:6}}>({couponCode})</span>
-              </p>
-            </div>
-            <button className="btn btn-sm btn-outline" style={{width:'auto'}} onClick={() => {
-              setManualCoupon(false);
-              setCouponCode('');
-              setCouponDiscount(0);
-              setCouponFreeShipping(false);
-              setCouponError('');
-            }}>Quitar</button>
+        {couponDiscount > 0 || couponFreeShipping ? (
+          <div>
+            <p style={{color:'var(--success)',fontSize:14,fontWeight:600}}>
+              {'\uD83C\uDF89'} Descuento aplicado autom\u00E1ticamente:
+            </p>
+            <p style={{color:'var(--success)',fontSize:16,fontWeight:700,marginTop:6}}>
+              {couponFreeShipping ? 'Envio gratis' : `-$${couponDiscount.toFixed(2)}`} <span style={{fontSize:13,fontWeight:500,color:'var(--gray-500)'}}>({couponCode})</span>
+            </p>
           </div>
+        ) : (
+          <p style={{color:'var(--gray-500)',fontSize:14}}>El mejor descuento se aplica autom\u00E1ticamente al superar el monto m\u00EDnimo de compra.</p>
         )}
-        <div style={{display:'flex',gap:8}}>
-          <input className="form-input" placeholder="Ej: DESCUENTO10" value={couponCode} onChange={e => setCouponCode(e.target.value)} style={{flex:1,marginBottom:0}} />
-          <button className="btn btn-primary" style={{width:'auto',padding:'0 20px',marginBottom:0}} onClick={handleApplyCoupon}>Aplicar</button>
-        </div>
-        {couponError && <p style={{color:'var(--danger)',marginTop:8,fontSize:14}}>{couponError}</p>}
       </div>
 
-      {availableCoupons.filter(c => !(c.minPurchase && total < c.minPurchase)).length > 0 && (
-        <div className="card" style={{marginTop:10}}>
-          <p style={{fontSize:13,fontWeight:700,color:'var(--gray-500)',marginBottom:8}}>Cupones que puedes usar:</p>
-          {availableCoupons.filter(c => !(c.minPurchase && total < c.minPurchase)).map(c => (
-            <div key={c.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 0',borderBottom:'1px solid var(--gray-100)'}}>
-              <div>
-                <span style={{fontWeight:700,color:'var(--primary)'}}>{c.code}</span>
-                <span style={{fontSize:13,color:'var(--gray-500)',marginLeft:6}}>
-                  {c.type === 'free_shipping' ? 'Envio gratis' : c.type === 'percentage' ? `${c.discount}% de descuento` : `$${c.discount} de descuento`}
-                  {c.minPurchase > 0 && ` (min $${c.minPurchase})`}
-                </span>
-              </div>
-              {manualCoupon && <button className="btn btn-sm btn-outline" onClick={() => { setCouponCode(c.code); handleApplyCoupon(null, c.code); }}>Usar</button>}
-            </div>
-          ))}
-        </div>
-      )}
+      {(() => {
+        const next = getNextCouponHint();
+        return next ? (
+          <p style={{fontSize:13,color:'var(--gray-500)',marginTop:8}}>
+            {'\uD83D\uDCA1'} A\u00F1ade <strong>${(next.minPurchase - total).toFixed(2)}</strong> m\u00E1s para obtener <strong>{next.label}</strong>
+          </p>
+        ) : null;
+      })()}
 
       <h3 className="section-title mb-15">Resumen</h3>
       <div className="card">
