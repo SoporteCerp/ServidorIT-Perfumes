@@ -1,7 +1,6 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getDocuments } from '../services/firestoreService';
-import { addToCart } from '../services/cartService';
 
 function ProductCard({ product, navigate }) {
   const imgs = (Array.isArray(product.images) && product.images.filter(Boolean).length > 0)
@@ -43,12 +42,20 @@ export default function Home() {
 
   const ofertas = products.filter(p => p.category === 'Ofertas' || p.category === 'ofertas');
   const nuevos = products.filter(p => p.category === 'Nuevos' || p.category === 'nuevos');
-  const allProducts = products;
+  const importados = products.filter(p => p.category === 'Importados' || p.category === 'importados');
 
   const sections = [
     { title: '\uD83D\uDD25 Ofertas', items: ofertas },
-    { title: '\u2728 Nuevos', items: nuevos }
+    { title: '\u2728 Nuevos', items: nuevos },
+    { title: '\u2708\uFE0F Importados', items: importados }
   ].filter(s => s.items.length > 0);
+
+  const perks = [
+    { icon: '\uD83D\uDE9A', title: 'Envio Gratis', desc: 'En Panama / San Miguelito' },
+    { icon: '\u2705', title: 'Pagos Seguros', desc: 'Yappy y tarjeta' },
+    { icon: '\u23F3', title: '2-4 dias', desc: 'De entrega' },
+    { icon: '\uD83D\uDCAC', title: 'Atencion', desc: 'Chat en tiempo real' }
+  ];
 
   return (
     <div style={{paddingBottom:20}}>
@@ -57,13 +64,16 @@ export default function Home() {
         <div style={{fontSize:50,marginBottom:10}}>✨</div>
         <h1 style={{color:'#D4AF37',fontSize:28,fontWeight:800,margin:'0 0 8px',textShadow:'0 2px 8px rgba(0,0,0,0.3)'}}>Esencia Gale</h1>
         <p style={{color:'#b8a86b',fontSize:15,margin:0,lineHeight:1.5}}>Fragancias que definen tu estilo</p>
-        <button
-          className="btn btn-primary"
-          style={{marginTop:20,padding:'12px 30px',fontSize:15,fontWeight:600}}
-          onClick={() => navigate('/catalog')}
-        >
-          {'\uD83D\uDECD\uFE0F'} Ver Catalogo
-        </button>
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))',gap:10,margin:'16px 10px'}}>
+        {perks.map(p => (
+          <div key={p.title} style={{background:'var(--card-bg,#fff)',borderRadius:12,padding:'14px',textAlign:'center',boxShadow:'0 2px 8px rgba(0,0,0,0.06)'}}>
+            <div style={{fontSize:26,marginBottom:4}}>{p.icon}</div>
+            <div style={{fontSize:13,fontWeight:700}}>{p.title}</div>
+            <div style={{fontSize:12,color:'var(--gray-400,#888)'}}>{p.desc}</div>
+          </div>
+        ))}
       </div>
 
       {sections.map(section => (
@@ -79,11 +89,11 @@ export default function Home() {
         </div>
       ))}
 
-      {allProducts.length > 0 && (
+      {products.length > 0 && (
         <div style={{margin:'20px 10px'}}>
           <h3 style={{fontSize:20,fontWeight:700,marginBottom:12,paddingLeft:4}}>Todos los productos</h3>
           <div className="product-grid" style={{gridTemplateColumns:'repeat(auto-fill,minmax(150px,1fr))',gap:10}}>
-            {allProducts.slice(0, 8).map(p => (
+            {products.slice(0, 8).map(p => (
               <div key={p.id} className="product-card" onClick={() => navigate('/product/' + p.id)} style={{cursor:'pointer'}}>
                 <div className="product-image" style={{height:160}}>
                   {(() => {
