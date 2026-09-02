@@ -380,14 +380,14 @@ export default function Checkout() {
         {couponDiscount > 0 || couponFreeShipping ? (
           <div>
             <p style={{color:'var(--success)',fontSize:14,fontWeight:600}}>
-              {'\uD83C\uDF89'} Descuento aplicado autom\u00E1ticamente:
+              {'\uD83C\uDF89 Descuento aplicado autom\u00E1ticamente:'}
             </p>
             <p style={{color:'var(--success)',fontSize:16,fontWeight:700,marginTop:6}}>
               {couponFreeShipping ? 'Envio gratis' : `-$${couponDiscount.toFixed(2)}`} <span style={{fontSize:13,fontWeight:500,color:'var(--gray-500)'}}>({couponCode})</span>
             </p>
           </div>
         ) : (
-          <p style={{color:'var(--gray-500)',fontSize:14}}>El mejor descuento se aplica autom\u00E1ticamente al superar el monto m\u00EDnimo de compra.</p>
+          <p style={{color:'var(--gray-500)',fontSize:14}}>{'El mejor descuento se aplica autom\u00E1ticamente al superar el monto m\u00EDnimo de compra.'}</p>
         )}
       </div>
 
@@ -395,7 +395,7 @@ export default function Checkout() {
         const next = getNextCouponHint();
         return next ? (
           <p style={{fontSize:13,color:'var(--gray-500)',marginTop:8}}>
-            {'\uD83D\uDCA1'} A\u00F1ade <strong>${(next.minPurchase - total).toFixed(2)}</strong> m\u00E1s para obtener <strong>{next.label}</strong>
+            {'\uD83D\uDCA1 A\u00F1ade'} <strong>${(next.minPurchase - total).toFixed(2)}</strong> {'m\u00E1s para obtener'} <strong>{next.label}</strong>
           </p>
         ) : null;
       })()}
