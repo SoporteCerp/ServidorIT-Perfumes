@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getCart, getCartTotal, clearCart } from '../services/cartService';
 import { addDocument, getDocuments } from '../services/firestoreService';
 import { auth } from '../services/firebase';
-import { validateCoupon } from '../services/couponService';
+import { validateCoupon, getCoupons } from '../services/couponService';
 
 const YAPPY_NUMBER = '62686706';
 const WHATSAPP_NUMBER = '50767238540';
@@ -41,7 +41,9 @@ export default function Checkout() {
 
   const [couponCode, setCouponCode] = useState('');
   const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponFreeShipping, setCouponFreeShipping] = useState(false);
   const [couponError, setCouponError] = useState('');
+  const [availableCoupons, setAvailableCoupons] = useState([]);
   const [finalTotal, setFinalTotal] = useState(0);
 
   const [paymentMethod, setPaymentMethod] = useState('yappy');
@@ -56,9 +58,15 @@ export default function Checkout() {
     return zone?.cost || 0;
   })();
 
-  const iva = (total + shippingCost) * IVA_RATE;
+  const iva = (total + (couponFreeShipping ? 0 : shippingCost)) * IVA_RATE;
 
   useEffect(() => { loadProfile(); }, []);
+
+  useEffect(() => {
+    getCoupons().then(coupons => {
+      setAvailableCoupons((coupons || []).filter(c => c.active));
+    }).catch(() => {});
+  }, []);
 
   const loadProfile = async () => {
     try {
@@ -84,27 +92,35 @@ export default function Checkout() {
     setFinalTotal(t * (1 + IVA_RATE));
   };
 
-  const recalcTotal = (base, coupon, zone) => {
-    const zoneCost = SHIPPING_ZONES.find(z => z.value === zone)?.cost || 0;
-    const subtotal = base + zoneCost;
+  const recalcTotal = (base, coupon, zone, freeShip) => {
+    const shippingTmp = freeShip ? 0 : shippingCost;
+    const subtotal = base + shippingTmp;
     const ivaAmt = subtotal * IVA_RATE;
     return Math.max(0, subtotal + ivaAmt - coupon);
   };
 
   useEffect(() => {
-    setFinalTotal(recalcTotal(total, couponDiscount, shippingZone));
-  }, [shippingZone, total, couponDiscount]);
+    setFinalTotal(recalcTotal(total, couponDiscount, shippingZone, couponFreeShipping));
+  }, [shippingZone, total, couponDiscount, couponFreeShipping]);
 
-  const handleApplyCoupon = async () => {
-    if (!couponCode.trim()) { setCouponError('Escribe un codigo'); return; }
-    const result = await validateCoupon(couponCode, total);
+  const handleApplyCoupon = async (ignore, codeToUse) => {
+    const code = codeToUse || couponCode;
+    if (!code.trim()) { setCouponError('Escribe un codigo'); return; }
+    const result = await validateCoupon(code, total);
     if (result.valid) {
-      setCouponDiscount(result.discount);
-      setFinalTotal(recalcTotal(total, result.discount, shippingZone));
+      if (result.freeShipping) {
+        setCouponFreeShipping(true);
+        setCouponDiscount(0);
+      } else {
+        setCouponFreeShipping(false);
+        setCouponDiscount(result.discount);
+      }
+      setFinalTotal(recalcTotal(total, result.freeShipping ? 0 : result.discount, shippingZone, result.freeShipping));
       setCouponError('');
     } else {
       setCouponDiscount(0);
-      setFinalTotal(recalcTotal(total, 0, shippingZone));
+      setCouponFreeShipping(false);
+      setFinalTotal(recalcTotal(total, 0, shippingZone, false));
       setCouponError(result.error);
     }
   };
@@ -359,8 +375,27 @@ export default function Checkout() {
           <button className="btn btn-primary" style={{width:'auto',padding:'0 20px',marginBottom:0}} onClick={handleApplyCoupon}>Aplicar</button>
         </div>
         {couponDiscount > 0 && <p style={{color:'var(--success)',marginTop:8,fontSize:14}}>Descuento aplicado: -${couponDiscount.toFixed(2)}</p>}
+        {couponFreeShipping && <p style={{color:'var(--success)',marginTop:8,fontSize:14}}>{'\uD83D\uDE9A'} Envio gratis aplicado</p>}
         {couponError && <p style={{color:'var(--danger)',marginTop:8,fontSize:14}}>{couponError}</p>}
       </div>
+
+      {availableCoupons.filter(c => !(c.minPurchase && total < c.minPurchase)).length > 0 && (
+        <div className="card" style={{marginTop:10}}>
+          <p style={{fontSize:13,fontWeight:700,color:'var(--gray-500)',marginBottom:8}}>Cupones disponibles para tu compra:</p>
+          {availableCoupons.filter(c => !(c.minPurchase && total < c.minPurchase)).map(c => (
+            <div key={c.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 0',borderBottom:'1px solid var(--gray-100)'}}>
+              <div>
+                <span style={{fontWeight:700,color:'var(--primary)'}}>{c.code}</span>
+                <span style={{fontSize:13,color:'var(--gray-500)',marginLeft:6}}>
+                  {c.type === 'free_shipping' ? 'Envio gratis' : c.type === 'percentage' ? `${c.discount}% de descuento` : `$${c.discount} de descuento`}
+                  {c.minPurchase > 0 && ` (min $${c.minPurchase})`}
+                </span>
+              </div>
+              <button className="btn btn-sm btn-outline" onClick={() => { setCouponCode(c.code); handleApplyCoupon(null, c.code); }}>Usar</button>
+            </div>
+          ))}
+        </div>
+      )}
 
       <h3 className="section-title mb-15">Resumen</h3>
       <div className="card">
@@ -376,7 +411,7 @@ export default function Checkout() {
         </div>
         <div style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid var(--gray-100)'}}>
           <span style={{fontSize:14,color:'var(--gray-700)'}}>Envio ({getShippingLabel()})</span>
-          <span style={{fontWeight:600}}>{shippingCost === 0 ? 'Gratis' : '$' + shippingCost.toFixed(2)}</span>
+          <span style={{fontWeight:600}}>{couponFreeShipping ? 'Gratis (cupon)' : (shippingCost === 0 ? 'Gratis' : '$' + shippingCost.toFixed(2))}</span>
         </div>
         <div style={{display:'flex',justifyContent:'space-between',padding:'8px 0'}}>
           <span style={{fontSize:14,color:'var(--gray-700)'}}>IVA (7%)</span>

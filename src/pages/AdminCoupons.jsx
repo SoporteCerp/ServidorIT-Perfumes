@@ -8,6 +8,7 @@ export default function AdminCoupons() {
   const [discount, setDiscount] = useState('');
   const [type, setType] = useState('percentage');
   const [minPurchase, setMinPurchase] = useState('');
+  const [expiresAt, setExpiresAt] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => { loadCoupons(); }, []);
@@ -23,9 +24,9 @@ export default function AdminCoupons() {
     if (type !== 'free_shipping' && !discount) { alert('Descuento obligatorio'); return; }
     setLoading(true);
     try {
-      await addCoupon(code, type === 'free_shipping' ? 0 : parseFloat(discount), type, parseFloat(minPurchase) || 0);
+      await addCoupon(code, type === 'free_shipping' ? 0 : parseFloat(discount), type, parseFloat(minPurchase) || 0, expiresAt ? new Date(expiresAt) : null);
       setModalOpen(false);
-      setCode(''); setDiscount(''); setMinPurchase('');
+      setCode(''); setDiscount(''); setMinPurchase(''); setExpiresAt('');
       loadCoupons();
     } catch {}
     setLoading(false);
@@ -64,6 +65,7 @@ export default function AdminCoupons() {
               <div className="admin-brand">
                 {couponTypeLabel(c)}
                 {c.minPurchase > 0 && ` \u00B7 Min $${c.minPurchase}`}
+                {c.expiresAt && ` \u00B7 Vence ${new Date(c.expiresAt.seconds * 1000).toLocaleDateString()}`}
               </div>
               <div className="admin-brand">Usado {c.usedCount || 0} veces</div>
             </div>
@@ -94,6 +96,7 @@ export default function AdminCoupons() {
                 <div className="form-group"><input className="form-input" placeholder="Descuento" type="number" value={discount} onChange={e => setDiscount(e.target.value)} /></div>
               )}
               <div className="form-group"><input className="form-input" placeholder="Compra minima (opcional)" type="number" value={minPurchase} onChange={e => setMinPurchase(e.target.value)} /></div>
+              <div className="form-group"><input className="form-input" type="date" value={expiresAt} onChange={e => setExpiresAt(e.target.value)} /></div>
               <div className="modal-actions">
                 <button type="button" className="btn btn-outline" onClick={() => setModalOpen(false)}>Cancelar</button>
                 <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? 'Creando...' : 'Crear Cupon'}</button>
