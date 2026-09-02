@@ -7,6 +7,7 @@ import './App.css';
 
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
+const Home = lazy(() => import('./pages/Home'));
 const Catalog = lazy(() => import('./pages/Catalog'));
 const ProductDetail = lazy(() => import('./pages/ProductDetail'));
 const Cart = lazy(() => import('./pages/Cart'));
@@ -49,7 +50,8 @@ function App() {
           </>
         ) : (
           <Route element={<Layout />}>
-            <Route path="/" element={<Catalog />} />
+            <Route path="/" element={<Home />} />
+            <Route path="/catalog" element={<Catalog />} />
             <Route path="/product/:id" element={<ProductDetail />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/checkout" element={<Checkout />} />

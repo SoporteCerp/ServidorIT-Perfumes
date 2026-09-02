@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCart, getCartTotal, clearCart } from '../services/cartService';
 import { addDocument, getDocuments } from '../services/firestoreService';
@@ -8,6 +8,11 @@ import { validateCoupon } from '../services/couponService';
 const YAPPY_NUMBER = '62686706';
 const WHATSAPP_NUMBER = '50767238540';
 const IVA_RATE = 0.07;
+const SHIPPING_ZONES = [
+  { value: 'ciudad', label: 'Ciudad de Panama / San Miguelito', cost: 0 },
+  { value: 'oeste', label: 'Panama Oeste', cost: 3 },
+  { value: 'resto', label: 'Resto del pais', cost: 5 },
+];
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -32,7 +37,17 @@ export default function Checkout() {
   const [couponError, setCouponError] = useState('');
   const [finalTotal, setFinalTotal] = useState(0);
 
-  const iva = total * IVA_RATE;
+  const [paymentMethod, setPaymentMethod] = useState('yappy');
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardExpiry, setCardExpiry] = useState('');
+  const [cardCvv, setCardCvv] = useState('');
+  const [cardName, setCardName] = useState('');
+  const [processingCard, setProcessingCard] = useState(false);
+
+  const [shippingZone, setShippingZone] = useState('ciudad');
+  const shippingCost = SHIPPING_ZONES.find(z => z.value === shippingZone)?.cost || 0;
+
+  const iva = (total + shippingCost) * IVA_RATE;
 
   useEffect(() => { loadProfile(); }, []);
 
@@ -60,18 +75,27 @@ export default function Checkout() {
     setFinalTotal(t * (1 + IVA_RATE));
   };
 
-  const applyIva = (base) => Math.max(0, base * (1 + IVA_RATE));
+  const recalcTotal = (base, coupon, zone) => {
+    const zoneCost = SHIPPING_ZONES.find(z => z.value === zone)?.cost || 0;
+    const subtotal = base + zoneCost;
+    const ivaAmt = subtotal * IVA_RATE;
+    return Math.max(0, subtotal + ivaAmt - coupon);
+  };
+
+  useEffect(() => {
+    setFinalTotal(recalcTotal(total, couponDiscount, shippingZone));
+  }, [shippingZone, total, couponDiscount]);
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) { setCouponError('Escribe un codigo'); return; }
     const result = await validateCoupon(couponCode, total);
     if (result.valid) {
       setCouponDiscount(result.discount);
-      setFinalTotal(Math.max(0, total * (1 + IVA_RATE) - result.discount));
+      setFinalTotal(recalcTotal(total, result.discount, shippingZone));
       setCouponError('');
     } else {
       setCouponDiscount(0);
-      setFinalTotal(total * (1 + IVA_RATE));
+      setFinalTotal(recalcTotal(total, 0, shippingZone));
       setCouponError(result.error);
     }
   };
@@ -92,9 +116,11 @@ export default function Checkout() {
     if (!name || !phone || !address) { alert('Completa todos los campos'); return; }
     setLoading(true);
     try {
-      const docRef = await addDocument('orders', {
+      const orderData = {
         items: cart.map(i => ({ id: i.id, name: i.name, brand: i.brand, price: i.price, cost: i.cost ?? i.price, quantity: i.quantity, image: i.image })),
         subtotal: total,
+        shippingCost: shippingCost,
+        shippingZone: shippingZone,
         iva: iva,
         total: finalTotal,
         discount: couponDiscount,
@@ -103,16 +129,34 @@ export default function Checkout() {
         customerEmail: email,
         customerPhone: phone,
         customerAddress: address,
-        paymentMethod: 'yappy',
-        paymentStatus: 'pendiente',
-        status: 'pendiente_confirmacion',
-        screenshot: null,
-        reference: '',
+        paymentMethod: paymentMethod,
         userId: auth.currentUser.uid
-      });
+      };
+
+      if (paymentMethod === 'card') {
+        orderData.paymentStatus = 'pagado';
+        orderData.status = 'pagado';
+        orderData.screenshot = null;
+        orderData.reference = 'Pago tarjeta simulado';
+      } else {
+        orderData.paymentStatus = 'pendiente';
+        orderData.status = 'pendiente_confirmacion';
+        orderData.screenshot = null;
+        orderData.reference = '';
+      }
+
+      const docRef = await addDocument('orders', orderData);
       setOrderId(docRef);
       clearCart();
-      setStep('yappy');
+
+      if (paymentMethod === 'card') {
+        setProcessingCard(true);
+        await new Promise(r => setTimeout(r, 2000));
+        setProcessingCard(false);
+        setStep('card-done');
+      } else {
+        setStep('yappy');
+      }
     } catch (e) { alert('Error al crear pedido'); }
     finally { setLoading(false); }
   };
@@ -133,6 +177,57 @@ export default function Checkout() {
     finally { setUploading(false); }
   };
 
+  const handleFormatCardNumber = (e) => {
+    let val = e.target.value.replace(/\D/g, '').substring(0, 16);
+    let formatted = val.replace(/(\d{4})(?=\d)/g, '$1 ');
+    setCardNumber(formatted);
+  };
+
+  const handleFormatExpiry = (e) => {
+    let val = e.target.value.replace(/\D/g, '').substring(0, 4);
+    if (val.length > 2) val = val.substring(0, 2) + '/' + val.substring(2);
+    setCardExpiry(val);
+  };
+
+  const getShippingLabel = () => {
+    const zone = SHIPPING_ZONES.find(z => z.value === shippingZone);
+    return zone ? zone.label + (zone.cost === 0 ? ' (Gratis)' : ' ($' + zone.cost.toFixed(2) + ')') : '';
+  };
+
+  if (processingCard) {
+    return (
+      <div style={{padding:40,textAlign:'center'}}>
+        <div style={{fontSize:50,marginBottom:15}}>💳</div>
+        <h2 className="section-title">Procesando Pago...</h2>
+        <p style={{color:'var(--gray-500)',margin:'15px 0'}}>Simulando transaccion con tarjeta</p>
+        <div style={{width:48,height:48,border:'4px solid var(--gray-200)',borderTop:'4px solid var(--primary)',borderRadius:'50%',animation:'spin 1s linear infinite',margin:'20px auto'}}/>
+      </div>
+    );
+  }
+
+  if (step === 'card-done') {
+    return (
+      <div style={{padding:20,textAlign:'center'}}>
+        <div style={{fontSize:60,marginBottom:15}}>✅</div>
+        <h2 className="section-title">Pago Aprobado</h2>
+        <p style={{color:'var(--gray-500)',margin:'15px 0',lineHeight:1.6}}>
+          Tu pago con tarjeta fue procesado exitosamente.<br/>
+          El pedido esta confirmado y listo para preparar.
+        </p>
+        <div className="card" style={{textAlign:'left',margin:'20px 0'}}>
+          <p style={{fontSize:13,color:'var(--gray-400)'}}>Numero de pedido</p>
+          <p style={{fontWeight:700,fontSize:16}}>{orderId?.slice(0,8).toUpperCase()}</p>
+          <p style={{fontSize:13,color:'var(--gray-400)',marginTop:10}}>Metodo de pago</p>
+          <p style={{fontWeight:600,fontSize:14}}>💳 Tarjeta terminada en {cardNumber.slice(-4) || '****'}</p>
+          <p style={{fontSize:13,color:'var(--gray-400)',marginTop:10}}>Total cobrado</p>
+          <p style={{fontWeight:700,fontSize:20,color:'var(--primary-dark)'}}>${finalTotal.toFixed(2)}</p>
+        </div>
+        <button className="btn btn-primary" onClick={() => navigate('/orders')}>Ver Mis Pedidos</button>
+        <button className="btn btn-outline" style={{marginTop:10}} onClick={() => navigate('/')}>Volver al Catalogo</button>
+      </div>
+    );
+  }
+
   if (step === 'done') {
     return (
       <div style={{padding:20,textAlign:'center'}}>
@@ -147,6 +242,8 @@ export default function Checkout() {
           <p style={{fontWeight:700,fontSize:16}}>{orderId?.slice(0,8).toUpperCase()}</p>
           <p style={{fontSize:13,color:'var(--gray-400)',marginTop:10}}>Referencia Yappy</p>
           <p style={{fontWeight:700,fontSize:16}}>{reference}</p>
+          <p style={{fontSize:13,color:'var(--gray-400)',marginTop:10}}>Envio</p>
+          <p style={{fontWeight:600,fontSize:14}}>{getShippingLabel()}</p>
           <p style={{fontSize:13,color:'var(--gray-400)',marginTop:10}}>Subtotal</p>
           <p style={{fontWeight:600,fontSize:16}}>${total.toFixed(2)}</p>
           <p style={{fontSize:13,color:'var(--gray-400)',marginTop:10}}>IVA (7%)</p>
@@ -231,7 +328,7 @@ export default function Checkout() {
             disabled={uploading || !screenshot || !reference.trim()}
             style={{opacity: (!screenshot || !reference.trim()) ? 0.5 : 1}}
           >
-            {uploading ? 'Enviando...' : '✓ Enviar Comprobante'}
+            {uploading ? 'Enviando...' : '\u2713 Enviar Comprobante'}
           </button>
         </div>
 
@@ -265,13 +362,79 @@ export default function Checkout() {
         </div>
       </div>
 
+      <h3 className="section-title mb-15">Zona de Envio</h3>
+      <div className="card">
+        <select className="form-input" value={shippingZone} onChange={e => setShippingZone(e.target.value)}>
+          {SHIPPING_ZONES.map(z => (
+            <option key={z.value} value={z.value}>
+              {z.label}{z.cost === 0 ? ' (Gratis)' : ' ($' + z.cost.toFixed(2) + ')'}
+            </option>
+          ))}
+        </select>
+        {shippingCost > 0 && (
+          <p style={{color:'var(--gray-500)',fontSize:13,marginTop:8}}>Costo de envio: ${shippingCost.toFixed(2)}</p>
+        )}
+        {shippingCost === 0 && (
+          <p style={{color:'var(--success)',fontSize:13,marginTop:8}}>Envio gratis para esta zona</p>
+        )}
+      </div>
+
+      <h3 className="section-title mb-15">Metodo de Pago</h3>
+      <div className="card">
+        <div style={{display:'flex',gap:10}}>
+          <button
+            className={paymentMethod === 'yappy' ? 'btn btn-primary' : 'btn btn-outline'}
+            style={{flex:1,padding:'12px 8px',fontSize:14}}
+            onClick={() => setPaymentMethod('yappy')}
+          >
+            {'\uD83D\uDCB0'} Yappy (subir comprobante)
+          </button>
+          <button
+            className={paymentMethod === 'card' ? 'btn btn-primary' : 'btn btn-outline'}
+            style={{flex:1,padding:'12px 8px',fontSize:14}}
+            onClick={() => setPaymentMethod('card')}
+          >
+            {'\uD83D\uDCB3'} Tarjeta (tarjeta ficticia)
+          </button>
+        </div>
+
+        {paymentMethod === 'yappy' && (
+          <div className="yappy-box" style={{marginTop:15}}>
+            <div className="yappy-instruction">Paga con Yappy al numero <strong>{YAPPY_NUMBER}</strong></div>
+          </div>
+        )}
+
+        {paymentMethod === 'card' && (
+          <div style={{marginTop:15}}>
+            <div className="form-group">
+              <label style={{fontSize:14,fontWeight:600,display:'block',marginBottom:6}}>Numero de tarjeta</label>
+              <input className="form-input" placeholder="1234 5678 9012 3456" value={cardNumber} onChange={handleFormatCardNumber} maxLength={19} />
+            </div>
+            <div style={{display:'flex',gap:10}}>
+              <div className="form-group" style={{flex:1}}>
+                <label style={{fontSize:14,fontWeight:600,display:'block',marginBottom:6}}>Vencimiento</label>
+                <input className="form-input" placeholder="MM/AA" value={cardExpiry} onChange={handleFormatExpiry} maxLength={5} />
+              </div>
+              <div className="form-group" style={{flex:1}}>
+                <label style={{fontSize:14,fontWeight:600,display:'block',marginBottom:6}}>CVV</label>
+                <input className="form-input" placeholder="123" value={cardCvv} onChange={e => setCardCvv(e.target.value.replace(/\D/g, '').substring(0, 4))} maxLength={4} type="password" />
+              </div>
+            </div>
+            <div className="form-group">
+              <label style={{fontSize:14,fontWeight:600,display:'block',marginBottom:6}}>Nombre en la tarjeta</label>
+              <input className="form-input" placeholder="Como aparece en la tarjeta" value={cardName} onChange={e => setCardName(e.target.value)} />
+            </div>
+          </div>
+        )}
+      </div>
+
       <h3 className="section-title mb-15">Codigo de Descuento</h3>
       <div className="card">
         <div style={{display:'flex',gap:8}}>
           <input className="form-input" placeholder="Ej: DESCUENTO10" value={couponCode} onChange={e => setCouponCode(e.target.value)} style={{flex:1,marginBottom:0}} />
           <button className="btn btn-primary" style={{width:'auto',padding:'0 20px',marginBottom:0}} onClick={handleApplyCoupon}>Aplicar</button>
         </div>
-        {couponDiscount > 0 && <p style={{color:'var(--success)',marginTop:8,fontSize:14}}>✓ Descuento aplicado: -${couponDiscount.toFixed(2)}</p>}
+        {couponDiscount > 0 && <p style={{color:'var(--success)',marginTop:8,fontSize:14}}>Descuento aplicado: -${couponDiscount.toFixed(2)}</p>}
         {couponError && <p style={{color:'var(--danger)',marginTop:8,fontSize:14}}>{couponError}</p>}
       </div>
 
@@ -286,6 +449,10 @@ export default function Checkout() {
         <div style={{display:'flex',justifyContent:'space-between',padding:'8px 0'}}>
           <span style={{fontSize:14,color:'var(--gray-700)'}}>Subtotal</span>
           <span style={{fontWeight:600}}>${total.toFixed(2)}</span>
+        </div>
+        <div style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid var(--gray-100)'}}>
+          <span style={{fontSize:14,color:'var(--gray-700)'}}>Envio ({getShippingLabel()})</span>
+          <span style={{fontWeight:600}}>{shippingCost === 0 ? 'Gratis' : '$' + shippingCost.toFixed(2)}</span>
         </div>
         <div style={{display:'flex',justifyContent:'space-between',padding:'8px 0'}}>
           <span style={{fontSize:14,color:'var(--gray-700)'}}>IVA (7%)</span>
@@ -303,48 +470,22 @@ export default function Checkout() {
         </div>
       </div>
 
-      <div className="yappy-box" style={{margin:'15px 0'}}>
-        <div className="yappy-title">Metodo de Pago</div>
-        <div style={{fontSize:28,margin:'10px 0'}}>💜</div>
-        <div className="yappy-instruction">Paga con Yappy al numero <strong>{YAPPY_NUMBER}</strong></div>
-      </div>
-
       <button className="btn btn-primary" onClick={handleOrder} disabled={loading}>
-        {loading ? 'Procesando...' : 'Confirmar Pedido'}
+        {loading ? 'Procesando...' : (paymentMethod === 'card' ? 'Pagar con Tarjeta' : 'Confirmar Pedido')}
       </button>
 
       <div style={{textAlign:'center',margin:'15px 0',color:'var(--gray-400)',fontSize:14}}>— o —</div>
 
       <button className="btn" onClick={() => {
         const date = new Date().toLocaleDateString('es-PA');
-        const items = cart.map(i => `${i.name}\n  ${i.quantity} x $${i.price.toFixed(2)}    $${(i.price * i.quantity).toFixed(2)}`).join('\n');
+        const items = cart.map(function(i) {
+          return i.name + '  ' + i.quantity + ' x $' + i.price.toFixed(2) + '    $' + (i.price * i.quantity).toFixed(2);
+        }).join('\n');
         const divider = '--------------------';
         const msg = encodeURIComponent(
-`*ESENCIA GALE*
-Tu tienda de fragancias
-Tel: ${WHATSAPP_NUMBER}
-${divider}
-FACTURA DE PEDIDO
-Fecha: ${date}
-${divider}
-
-${items}
-
-Subtotal: $${total.toFixed(2)}
-IVA (7%): $${iva.toFixed(2)}
-
-${divider}
-*TOTAL: $${finalTotal.toFixed(2)}*
-${divider}
-
-DATOS DEL CLIENTE:
-Nombre: ${name}
-Telefono: ${phone}
-Direccion: ${address}
-${divider}
-Gracias por tu compra!
-Para coordinar entrega enviar comprobante de pago`);
-        window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, '_blank');
+          'ESENCIA GALE\nTu tienda de fragancias\nTel: ' + WHATSAPP_NUMBER + '\n' + divider + '\nFACTURA DE PEDIDO\nFecha: ' + date + '\n' + divider + '\n\n' + items + '\n\nSubtotal: $' + total.toFixed(2) + '\nEnvio (' + getShippingLabel() + '): $' + shippingCost.toFixed(2) + '\nIVA (7%): $' + iva.toFixed(2) + '\n\n' + divider + '\nTOTAL: $' + finalTotal.toFixed(2) + '\n' + divider + '\n\nDATOS DEL CLIENTE:\nNombre: ' + name + '\nTelefono: ' + phone + '\nDireccion: ' + address + '\n' + divider + '\nGracias por tu compra!\nPara coordinar entrega enviar comprobante de pago'
+        );
+        window.open('https://wa.me/' + WHATSAPP_NUMBER + '?text=' + msg, '_blank');
       }} style={{background:'#25D366',color:'#fff'}}>
         Enviar Pedido por WhatsApp
       </button>

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginUser, resetPassword } from '../services/authService';
+import { requestNotificationPermission, setupForegroundListener } from '../services/notificationService';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -11,11 +12,23 @@ export default function Login() {
   const [resetSent, setResetSent] = useState(false);
   const [showReset, setShowReset] = useState(false);
 
+  useEffect(() => {
+    if (Notification && Notification.permission === 'default') {
+      requestNotificationPermission();
+      setupForegroundListener();
+    }
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) { setError('Completa todos los campos'); return; }
     setLoading(true); setError('');
-    try { await loginUser(email, password); navigate('/'); }
+    try {
+      await loginUser(email, password);
+      requestNotificationPermission();
+      setupForegroundListener();
+      navigate('/');
+    }
     catch { setError('Credenciales incorrectas'); }
     finally { setLoading(false); }
   };

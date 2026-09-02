@@ -7,13 +7,15 @@ import { startListening, stopListening, requestNotificationPermission, setupFore
 import { getWishlistCount } from '../services/wishlistService';
 
 const customerNav = [
-  { path: '/', icon: '\uD83D\uDECD\uFE0F', label: 'Catalogo' },
+  { path: '/', icon: '\uD83C\uDFE0', label: 'Inicio' },
+  { path: '/catalog', icon: '\uD83D\uDECD\uFE0F', label: 'Catalogo' },
   { path: '/cart', icon: '\uD83D\uDED2', label: 'Carrito' },
   { path: '/orders', icon: '\uD83D\uDCE6', label: 'Mis Pedidos' },
 ];
 
 const adminNav = [
-  { path: '/', icon: '\uD83D\uDECD\uFE0F', label: 'Catalogo' },
+  { path: '/', icon: '\uD83C\uDFE0', label: 'Inicio' },
+  { path: '/catalog', icon: '\uD83D\uDECD\uFE0F', label: 'Catalogo' },
   { path: '/dashboard', icon: '\uD83D\uDCE6', label: 'Pedidos y Ventas' },
   { path: '/inventory', icon: '\uD83E\uDDF4', label: 'Inventario' },
 ];
@@ -48,7 +50,7 @@ export default function Layout() {
   }, []);
 
   useEffect(() => {
-    document.title = notifCount > 0 ? `(${notifCount}) Esencia Gale` : 'Esencia Gale';
+    document.title = notifCount > 0 ? '(' + notifCount + ') Esencia Gale' : 'Esencia Gale';
   }, [notifCount]);
 
   const loadRole = async () => {
@@ -67,12 +69,14 @@ export default function Layout() {
     <div className="app-layout">
       <header className="app-header">
         <div className="header-top">
-          <div>
+          <div style={{display:'flex',alignItems:'center',gap:10,cursor:'pointer'}} onClick={() => navigate('/')}>
             <img src="/logo.jpg" alt="Esencia Gale" style={{width:46,height:46,borderRadius:'50%',objectFit:'cover',border:'2px solid var(--primary,#D4AF37)'}} />
-            <div className="header-greeting">
-              {role === 'admin' ? '\uD83D\uDD27 Admin' : 'Hola'}, {user?.displayName || 'Cliente'}
+            <div>
+              <div className="header-greeting">
+                {role === 'admin' ? '\uD83D\uDD27 Admin' : 'Hola'}, {user?.displayName || 'Cliente'}
+              </div>
+              <div className="header-date">{new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
             </div>
-            <div className="header-date">{new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
           </div>
           <div className="header-actions">
             <button className="icon-btn" onClick={() => navigate('/wishlist')}>
