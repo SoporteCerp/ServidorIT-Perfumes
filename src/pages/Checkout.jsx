@@ -45,11 +45,6 @@ export default function Checkout() {
   const [finalTotal, setFinalTotal] = useState(0);
 
   const [paymentMethod, setPaymentMethod] = useState('yappy');
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCvv, setCardCvv] = useState('');
-  const [cardName, setCardName] = useState('');
-  const [processingCard, setProcessingCard] = useState(false);
 
   const [shippingZone, setShippingZone] = useState('panama');
   const [courier, setCourier] = useState('ferguson');
@@ -149,30 +144,16 @@ export default function Checkout() {
         userId: auth.currentUser.uid
       };
 
-      if (paymentMethod === 'card') {
-        orderData.paymentStatus = 'pagado';
-        orderData.status = 'pagado';
-        orderData.screenshot = null;
-        orderData.reference = 'Pago tarjeta simulado';
-      } else {
-        orderData.paymentStatus = 'pendiente';
-        orderData.status = 'pendiente_confirmacion';
-        orderData.screenshot = null;
-        orderData.reference = '';
-      }
+      orderData.paymentStatus = 'pendiente';
+      orderData.status = 'pendiente_confirmacion';
+      orderData.screenshot = null;
+      orderData.reference = '';
 
       const docRef = await addDocument('orders', orderData);
       setOrderId(docRef);
       clearCart();
 
-      if (paymentMethod === 'card') {
-        setProcessingCard(true);
-        await new Promise(r => setTimeout(r, 2000));
-        setProcessingCard(false);
-        setStep('card-done');
-      } else {
-        setStep('yappy');
-      }
+      setStep('yappy');
     } catch (e) { alert('Error al crear pedido'); }
     finally { setLoading(false); }
   };
@@ -193,18 +174,6 @@ export default function Checkout() {
     finally { setUploading(false); }
   };
 
-  const handleFormatCardNumber = (e) => {
-    let val = e.target.value.replace(/\D/g, '').substring(0, 16);
-    let formatted = val.replace(/(\d{4})(?=\d)/g, '$1 ');
-    setCardNumber(formatted);
-  };
-
-  const handleFormatExpiry = (e) => {
-    let val = e.target.value.replace(/\D/g, '').substring(0, 4);
-    if (val.length > 2) val = val.substring(0, 2) + '/' + val.substring(2);
-    setCardExpiry(val);
-  };
-
   const getShippingLabel = () => {
     if (shippingZone === 'resto') {
       const c = COURIER_OPTIONS.find(c => c.value === courier);
@@ -213,40 +182,6 @@ export default function Checkout() {
     const zone = SHIPPING_ZONES.find(z => z.value === shippingZone);
     return zone ? zone.label + (zone.cost === 0 ? ' (Gratis)' : ' ($' + zone.cost.toFixed(2) + ')') : '';
   };
-
-  if (processingCard) {
-    return (
-      <div style={{padding:40,textAlign:'center'}}>
-        <div style={{fontSize:50,marginBottom:15}}>💳</div>
-        <h2 className="section-title">Procesando Pago...</h2>
-        <p style={{color:'var(--gray-500)',margin:'15px 0'}}>Simulando transaccion con tarjeta</p>
-        <div style={{width:48,height:48,border:'4px solid var(--gray-200)',borderTop:'4px solid var(--primary)',borderRadius:'50%',animation:'spin 1s linear infinite',margin:'20px auto'}}/>
-      </div>
-    );
-  }
-
-  if (step === 'card-done') {
-    return (
-      <div style={{padding:20,textAlign:'center'}}>
-        <div style={{fontSize:60,marginBottom:15}}>✅</div>
-        <h2 className="section-title">Pago Aprobado</h2>
-        <p style={{color:'var(--gray-500)',margin:'15px 0',lineHeight:1.6}}>
-          Tu pago con tarjeta fue procesado exitosamente.<br/>
-          El pedido esta confirmado y listo para preparar.
-        </p>
-        <div className="card" style={{textAlign:'left',margin:'20px 0'}}>
-          <p style={{fontSize:13,color:'var(--gray-400)'}}>Numero de pedido</p>
-          <p style={{fontWeight:700,fontSize:16}}>{orderId?.slice(0,8).toUpperCase()}</p>
-          <p style={{fontSize:13,color:'var(--gray-400)',marginTop:10}}>Metodo de pago</p>
-          <p style={{fontWeight:600,fontSize:14}}>💳 Tarjeta terminada en {cardNumber.slice(-4) || '****'}</p>
-          <p style={{fontSize:13,color:'var(--gray-400)',marginTop:10}}>Total cobrado</p>
-          <p style={{fontWeight:700,fontSize:20,color:'var(--primary-dark)'}}>${finalTotal.toFixed(2)}</p>
-        </div>
-        <button className="btn btn-primary" onClick={() => navigate('/orders')}>Ver Mis Pedidos</button>
-        <button className="btn btn-outline" style={{marginTop:10}} onClick={() => navigate('/')}>Volver al Catalogo</button>
-      </div>
-    );
-  }
 
   if (step === 'done') {
     return (
@@ -411,51 +346,10 @@ export default function Checkout() {
 
       <h3 className="section-title mb-15">Metodo de Pago</h3>
       <div className="card">
-        <div style={{display:'flex',gap:10}}>
-          <button
-            className={paymentMethod === 'yappy' ? 'btn btn-primary' : 'btn btn-outline'}
-            style={{flex:1,padding:'12px 8px',fontSize:14}}
-            onClick={() => setPaymentMethod('yappy')}
-          >
-            {'\uD83D\uDCB0'} Yappy (subir comprobante)
-          </button>
-          <button
-            className={paymentMethod === 'card' ? 'btn btn-primary' : 'btn btn-outline'}
-            style={{flex:1,padding:'12px 8px',fontSize:14}}
-            onClick={() => setPaymentMethod('card')}
-          >
-            {'\uD83D\uDCB3'} Tarjeta (tarjeta ficticia)
-          </button>
+        <div className="yappy-box">
+          <div className="yappy-instruction">Paga con Yappy al numero <strong>{YAPPY_NUMBER}</strong></div>
+          <div className="yappy-title" style={{marginTop:8}}>{'\uD83D\uDCB0'} Yappy</div>
         </div>
-
-        {paymentMethod === 'yappy' && (
-          <div className="yappy-box" style={{marginTop:15}}>
-            <div className="yappy-instruction">Paga con Yappy al numero <strong>{YAPPY_NUMBER}</strong></div>
-          </div>
-        )}
-
-        {paymentMethod === 'card' && (
-          <div style={{marginTop:15}}>
-            <div className="form-group">
-              <label style={{fontSize:14,fontWeight:600,display:'block',marginBottom:6}}>Numero de tarjeta</label>
-              <input className="form-input" placeholder="1234 5678 9012 3456" value={cardNumber} onChange={handleFormatCardNumber} maxLength={19} />
-            </div>
-            <div style={{display:'flex',gap:10}}>
-              <div className="form-group" style={{flex:1}}>
-                <label style={{fontSize:14,fontWeight:600,display:'block',marginBottom:6}}>Vencimiento</label>
-                <input className="form-input" placeholder="MM/AA" value={cardExpiry} onChange={handleFormatExpiry} maxLength={5} />
-              </div>
-              <div className="form-group" style={{flex:1}}>
-                <label style={{fontSize:14,fontWeight:600,display:'block',marginBottom:6}}>CVV</label>
-                <input className="form-input" placeholder="123" value={cardCvv} onChange={e => setCardCvv(e.target.value.replace(/\D/g, '').substring(0, 4))} maxLength={4} type="password" />
-              </div>
-            </div>
-            <div className="form-group">
-              <label style={{fontSize:14,fontWeight:600,display:'block',marginBottom:6}}>Nombre en la tarjeta</label>
-              <input className="form-input" placeholder="Como aparece en la tarjeta" value={cardName} onChange={e => setCardName(e.target.value)} />
-            </div>
-          </div>
-        )}
       </div>
 
       <h3 className="section-title mb-15">Codigo de Descuento</h3>
@@ -501,7 +395,7 @@ export default function Checkout() {
       </div>
 
       <button className="btn btn-primary" onClick={handleOrder} disabled={loading}>
-        {loading ? 'Procesando...' : (paymentMethod === 'card' ? 'Pagar con Tarjeta' : 'Confirmar Pedido')}
+        {loading ? 'Procesando...' : 'Confirmar Pedido'}
       </button>
 
       <div style={{textAlign:'center',margin:'15px 0',color:'var(--gray-400)',fontSize:14}}>— o —</div>

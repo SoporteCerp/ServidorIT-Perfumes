@@ -80,7 +80,7 @@ export default function Home() {
 
   const perks = [
     { icon: '\uD83D\uDE9A', title: 'Envio a todo el pais', desc: 'Colon gratis, Panama $2' },
-    { icon: '\u2705', title: 'Pagos Seguros', desc: 'Yappy y tarjeta' },
+    { icon: '\u2705', title: 'Pagos Seguros', desc: 'Paga con Yappy' },
     { icon: '\u23F3', title: '2-4 dias', desc: 'De entrega' },
     { icon: '\uD83D\uDCAC', title: 'Atencion', desc: 'Chat en tiempo real' }
   ];
