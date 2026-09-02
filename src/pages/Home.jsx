@@ -68,6 +68,8 @@ export default function Home() {
     setProducts(data.filter(p => p.active === true));
   };
 
+  const ofertas = products.filter(p => p.category === 'Ofertas' || p.category === 'ofertas');
+
   const perks = [
     { icon: '\uD83D\uDE9A', title: 'Envio a todo el pais', desc: 'Panama, Oeste y resto del pais' },
     { icon: '\u2705', title: 'Pagos Seguros', desc: 'Yappy y tarjeta' },
@@ -94,12 +96,31 @@ export default function Home() {
         ))}
       </div>
 
+      {ofertas.length > 0 && (
+        <div style={{margin:'20px 10px'}}>
+          <h3 style={{fontSize:20,fontWeight:700,marginBottom:12,paddingLeft:4}}>{'\uD83D\uDD25'} Ofertas</h3>
+          <AutoCarousel items={ofertas} navigate={navigate} />
+        </div>
+      )}
+
       {products.length > 0 && (
         <div style={{margin:'20px 10px'}}>
           <h3 style={{fontSize:20,fontWeight:700,marginBottom:12,paddingLeft:4}}>Todos los productos</h3>
           <AutoCarousel items={products} navigate={navigate} />
         </div>
       )}
+
+      <div style={{background:'#1a1a2e',color:'#d4af37',borderRadius:16,margin:'20px 10px 0',padding:'24px 16px',textAlign:'center'}}>
+        <div style={{fontSize:18,fontWeight:700,marginBottom:12}}>Esencia Gale</div>
+        <div style={{fontSize:14,color:'#b8a86b',lineHeight:2}}>
+          <div>{'\uD83D\uDCCD'} Panama</div>
+          <div>{'\uD83D\uDCAC'} Yappy: 6268-6706</div>
+          <div>{'\uD83D\uDCF1'} WhatsApp: +507 6723-8540</div>
+          <div>{'\uD83D\uDECD\uFE0F'} Envios a todo el pais</div>
+          <div>{'\uD83D\uDD52'} Horario: Lun a Sab 9am - 7pm</div>
+        </div>
+        <div style={{fontSize:12,color:'#8a7a3a',marginTop:14}}>© {(new Date()).getFullYear()} Esencia Gale. Todos los derechos reservados.</div>
+      </div>
     </div>
   );
 }
