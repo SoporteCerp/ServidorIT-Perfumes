@@ -18,7 +18,7 @@ export const requestNotificationPermission = async () => {
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
         const token = await getToken(messaging, {
-          vapidKey: 'BLx3_Hrh3eDf3dPHr8xP0xk0q4w7a_k1e3nM2cXtYjKmO7rQ9sDvLpNxWbHzA4eG6R2fU8iJ5oK3lM7n'
+          vapidKey: 'BJfxo9EflInZE1zooyGxEuiHv92o81sbIYlStduAYAPWkcTU610G_IEgYtC-Kk9iP3QUwRDdSPZd6a0HUxGoyTQ'
         });
         if (token) await saveFCMToken(token);
         return true;
