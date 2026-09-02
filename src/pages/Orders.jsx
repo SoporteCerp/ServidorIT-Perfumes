@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { getDocuments, deleteDocument } from '../services/firestoreService';
 import { auth } from '../services/firebase';
+import OrderTracker from '../components/OrderTracker';
 
 const statusConfig = {
   pendiente_confirmacion: { label: 'Esperando confirmacion', icon: '⏳', color: '#F59E0B', message: 'Tu comprobante esta siendo revisado' },
   en_transito: { label: 'Pendiente de entrega', icon: '📦', color: '#3B82F6', message: 'Tu pago fue confirmado y tu pedido esta en camino' },
   pagado: { label: 'Pago confirmado', icon: '✅', color: '#10B981', message: 'Tu pago fue verificado exitosamente' },
   rechazado: { label: 'Pago no verificado', icon: '❌', color: '#EF4444', message: 'El comprobante no pudo ser verificado. Contactanos.' },
-  procesando: { label: 'Procesando', icon: '📦', color: '#3B82F6', message: 'Tu pedido esta siendo preparado' },
+  procesando: { label: 'En proceso', icon: '🔧', color: '#3B82F6', message: 'Tu pedido esta siendo preparado' },
   entregado: { label: 'Entregado', icon: '🎉', color: '#059669', message: 'Tu pedido fue entregado' },
   pendiente: { label: 'Pendiente', icon: '⏳', color: '#F59E0B', message: 'Esperando pago' }
 };
@@ -48,6 +49,8 @@ export default function Orders() {
               <span style={{fontSize:18,marginRight:8}}>{status.icon}</span>
               <span style={{fontSize:14,color:status.color,fontWeight:500}}>{status.message}</span>
             </div>
+
+            <OrderTracker order={order} />
 
             <div className="order-items">
               {order.items?.map((item, i) => (

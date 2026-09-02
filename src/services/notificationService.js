@@ -7,6 +7,10 @@ let unsubscribers = [];
 let shownOrderIds = new Set();
 let shownPaymentIds = new Set();
 let shownChatIds = new Set();
+let chatActive = false;
+
+export const setChatActive = (v) => { chatActive = !!v; };
+export const isChatActive = () => chatActive;
 
 export const requestNotificationPermission = async () => {
   try {
@@ -104,6 +108,7 @@ export const subscribeToNotifications = (callback) => {
 
     unsubChat = onSnapshot(chatQuery, (snapshot) => {
       if (!initialized.chat) { initialized.chat = true; return; }
+      if (isChatActive()) return;
       snapshot.docChanges().forEach(c => {
         if (c.type === 'modified') {
           const chat = c.doc.data();
@@ -188,6 +193,7 @@ const listenChatMessages = (userId, role) => {
   }
   const unsub = onSnapshot(q, (snapshot) => {
     if (!initialized) { initialized = true; return; }
+    if (isChatActive()) return;
     snapshot.docChanges().forEach((change) => {
       if (change.type === 'modified' && !shownChatIds.has(change.doc.id + '_' + Date.now())) {
         const chat = change.doc.data();

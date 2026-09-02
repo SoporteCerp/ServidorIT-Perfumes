@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { auth } from '../services/firebase';
 import { getUserRole } from '../services/authService';
 import { getOrCreateChat, sendMessage, subscribeToMessages, subscribeToChats, updateChatLastMessage, deleteMessage, deleteChat } from '../services/chatService';
-import { clearNotificationType } from '../services/notificationService';
+import { clearNotificationType, setChatActive } from '../services/notificationService';
 
 export default function Chat() {
   const [messages, setMessages] = useState([]);
@@ -14,7 +14,7 @@ export default function Chat() {
   const [loading, setLoading] = useState(false);
   const messagesEnd = useRef(null);
 
-  useEffect(() => { init(); return () => {}; }, []);
+  useEffect(() => { init(); return () => { setChatActive(false); }; }, []);
 
   const init = async () => {
     const r = await getUserRole(auth.currentUser.uid);
@@ -32,11 +32,12 @@ export default function Chat() {
   useEffect(() => {
     if (!selectedChat) return;
     clearNotificationType('chat');
+    setChatActive(true);
     const unsub = subscribeToMessages(selectedChat, (msgs) => {
       setMessages(msgs);
       setTimeout(() => messagesEnd.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     });
-    return unsub;
+    return () => { unsub(); setChatActive(false); };
   }, [selectedChat]);
 
   const handleSend = async () => {

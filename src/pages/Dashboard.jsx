@@ -4,9 +4,10 @@ import { sendInvoice } from '../services/emailService';
 
 const statusLabel = {
   pagado: 'Pago aprobado',
-  en_transito: 'Pendiente de entrega',
+  en_transito: 'En camino',
   entregado: 'Entregado',
   pendiente_confirmacion: 'Por confirmar',
+  procesando: 'En proceso',
   rechazado: 'Rechazado',
   pendiente: 'Pendiente'
 };
@@ -41,7 +42,7 @@ export default function Dashboard() {
     try {
       await updateDocument('orders', order.id, {
         paymentStatus: 'pagado',
-        status: 'en_transito'
+        status: 'procesando'
       });
 
       if (order.customerEmail) {
@@ -82,6 +83,24 @@ export default function Dashboard() {
     finally { setLoadingAction(null); }
   };
 
+  const markProcessing = async (order) => {
+    setLoadingAction(order.id);
+    try {
+      await updateDocument('orders', order.id, { status: 'procesando', paymentStatus: 'pagado' });
+      loadData();
+    } catch (e) { alert('Error'); }
+    finally { setLoadingAction(null); }
+  };
+
+  const markInTransit = async (order) => {
+    setLoadingAction(order.id);
+    try {
+      await updateDocument('orders', order.id, { status: 'en_transito' });
+      loadData();
+    } catch (e) { alert('Error'); }
+    finally { setLoadingAction(null); }
+  };
+
   const handleDelete = async (order) => {
     if (!confirm(`¿Eliminar el pedido de ${order.customerName} por $${order.total}? Esta accion no se puede deshacer.`)) return;
     setLoadingAction(order.id);
@@ -93,7 +112,7 @@ export default function Dashboard() {
   };
 
   const pendingOrders = orders.filter(o => o.status === 'pendiente_confirmacion');
-  const paidOrders = orders.filter(o => o.status === 'pagado' || o.status === 'en_transito');
+  const paidOrders = orders.filter(o => o.status === 'pagado' || o.status === 'en_transito' || o.status === 'procesando');
 
   return (
     <>
@@ -212,9 +231,19 @@ export default function Dashboard() {
                 <span style={{fontSize:12,color:'var(--gray-400)'}}>
                   {order.createdAt?.toDate ? new Date(order.createdAt.toDate()).toLocaleDateString() : ''}
                 </span>
-                {order.status !== 'entregado' && (
+                {order.status === 'pagado' && (
+                  <button className="btn btn-sm btn-outline" onClick={() => markProcessing(order)} disabled={loadingAction === order.id}>
+                    🔧 En proceso
+                  </button>
+                )}
+                {order.status === 'procesando' && (
+                  <button className="btn btn-sm btn-outline" onClick={() => markInTransit(order)} disabled={loadingAction === order.id}>
+                    🚚 En camino
+                  </button>
+                )}
+                {order.status === 'en_transito' && (
                   <button className="btn btn-sm btn-outline" onClick={() => markDelivered(order)} disabled={loadingAction === order.id}>
-                    Marcar Entregado
+                    ✓ Marcar Entregado
                   </button>
                 )}
               </div>

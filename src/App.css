@@ -814,3 +814,112 @@ body {
   background: var(--gray-100);
 }
 .gallery-thumb.active { border-color: var(--primary); }
+
+/* seguimiento del pedido */
+.tracker-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  border: 1px solid var(--gray-100);
+}
+.tracker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin-bottom: 14px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.tracker-est {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary-dark);
+  background: #fdf6e3;
+  padding: 3px 10px;
+  border-radius: 12px;
+}
+.tracker-steps {
+  display: flex;
+  align-items: flex-start;
+}
+.tracker-step {
+  min-width: 0;
+}
+.tracker-dot-row {
+  display: flex;
+  align-items: center;
+}
+.tracker-dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--gray-200);
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--gray-400);
+  flex-shrink: 0;
+  user-select: none;
+}
+.tracker-dot.active {
+  border-color: var(--primary);
+  color: var(--primary-dark);
+  box-shadow: 0 0 0 3px rgba(212,175,55,0.2);
+}
+.tracker-dot.done {
+  background: var(--success);
+  border-color: var(--success);
+  color: #fff;
+}
+.tracker-line {
+  flex: 1;
+  height: 3px;
+  background: var(--gray-200);
+  margin: 0 4px;
+  min-width: 12px;
+}
+.tracker-line.done { background: var(--success); }
+.tracker-label {
+  margin-top: 8px;
+  padding-right: 6px;
+}
+.tracker-step-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gray-400);
+}
+.tracker-step-label.done { color: var(--success); }
+.tracker-step-label.active { color: var(--primary-dark); }
+.tracker-step-desc {
+  font-size: 10px;
+  color: var(--gray-400);
+  margin-top: 2px;
+}
+.tracker-foot {
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--gray-500);
+  border-top: 1px dashed var(--gray-200);
+  padding-top: 10px;
+}
+.tracker-rejected {
+  background: #FEE2E2;
+  color: #EF4444;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+}
+.dark-mode .tracker-card { background: #17120a !important; border-color: #2a2418 !important; }
+.dark-mode .tracker-est { background: #2b1f00 !important; color: #e0c76a !important; }
+.dark-mode .tracker-dot { background: #0a0a0a !important; border-color: #4a3f1f !important; color: #8a7d4d !important; }
+.dark-mode .tracker-step-label { color: #8a7d4d !important; }
+.dark-mode .tracker-step-desc { color: #8a7d4d !important; }
