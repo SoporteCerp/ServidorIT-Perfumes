@@ -12,8 +12,13 @@ export function useAuth() {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
-        const role = await getUserRole(user.uid);
-        setUserRole(role);
+        try {
+          const role = await getUserRole(user.uid);
+          setUserRole(role);
+        } catch (e) {
+          console.error('No se pudo obtener el rol', e);
+          setUserRole(null);
+        }
       } else {
         setUserRole(null);
       }

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../services/firebase';
 import { logoutUser, getUserRole } from '../services/authService';
-import { getDocuments, updateDocument, setDocument } from '../services/firestoreService';
+import { getDocument, updateDocument, setDocument } from '../services/firestoreService';
 import { uploadProfilePhoto } from '../services/storageService';
 import { setLanguage, getLanguage, t } from '../services/i18n';
 import { toast } from '../components/Toast';
@@ -32,9 +32,8 @@ export default function Profile() {
 
   const loadProfile = async () => {
     try {
-      const users = await getDocuments('users', [{ field: 'uid', operator: '==', value: user.uid }]);
-      if (users.length > 0) {
-        const u = users[0];
+      const u = await getDocument('users', user.uid);
+      if (u) {
         setUserId(u.id);
         setRole(u.role || 'customer');
         if (u.phone) setPhone(u.phone);

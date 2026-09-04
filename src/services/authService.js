@@ -1,6 +1,6 @@
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from './firebase';
-import { setDocument, getDocuments } from './firestoreService';
+import { setDocument, getDocument } from './firestoreService';
 
 export const registerUser = async (email, password, name) => {
   const cred = await createUserWithEmailAndPassword(auth, email, password);
@@ -19,9 +19,9 @@ export const registerUser = async (email, password, name) => {
 export const loginUser = async (email, password) => {
   const cred = await signInWithEmailAndPassword(auth, email, password);
   
-  const users = await getDocuments('users', [{ field: 'uid', operator: '==', value: cred.user.uid }]);
+  const userDoc = await getDocument('users', cred.user.uid);
   
-  if (users.length === 0) {
+  if (!userDoc) {
     await setDocument('users', cred.user.uid, {
       uid: cred.user.uid,
       email: email.toLowerCase(),
@@ -34,8 +34,8 @@ export const loginUser = async (email, password) => {
 };
 
 export const getUserRole = async (uid) => {
-  const users = await getDocuments('users', [{ field: 'uid', operator: '==', value: uid }]);
-  return users.length > 0 ? users[0].role : 'customer';
+  const userDoc = await getDocument('users', uid);
+  return userDoc && userDoc.role ? userDoc.role : 'customer';
 };
 
 export const resetPassword = async (email) => {

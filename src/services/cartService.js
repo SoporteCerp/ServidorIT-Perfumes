@@ -1,5 +1,5 @@
 import { auth } from './firebase';
-import { getDocuments, setDocument } from './firestoreService';
+import { getDocument, setDocument } from './firestoreService';
 
 const CART_KEY = 'servidorit_cart';
 
@@ -27,10 +27,10 @@ export const loadCartFromCloud = async () => {
   try {
     const userId = auth.currentUser?.uid;
     if (!userId) return getCart();
-    const carts = await getDocuments('carts', [{ field: 'userId', operator: '==', value: userId }]);
-    if (carts.length > 0 && carts[0].items) {
-      localStorage.setItem(CART_KEY, JSON.stringify(carts[0].items));
-      return carts[0].items;
+    const cartDoc = await getDocument('carts', userId);
+    if (cartDoc && cartDoc.items) {
+      localStorage.setItem(CART_KEY, JSON.stringify(cartDoc.items));
+      return cartDoc.items;
     }
     return getCart();
   } catch (err) {

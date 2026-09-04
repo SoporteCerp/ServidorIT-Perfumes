@@ -1,7 +1,7 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCart, getCartTotal, clearCart } from '../services/cartService';
-import { addDocument, getDocuments, updateDocument } from '../services/firestoreService';
+import { addDocument, getDocument, getDocuments, updateDocument } from '../services/firestoreService';
 import { auth } from '../services/firebase';
 import { getCoupons, getBestCoupon } from '../services/couponService';
 import { compressImage } from '../services/imageUtils';
@@ -93,9 +93,8 @@ export default function Checkout() {
 
   const loadProfile = async () => {
     try {
-      const users = await getDocuments('users', [{ field: 'uid', operator: '==', value: auth.currentUser.uid }]);
-      if (users.length > 0) {
-        const u = users[0];
+      const u = await getDocument('users', auth.currentUser.uid);
+      if (u) {
         setName(u.name || auth.currentUser?.displayName || '');
         setPhone(u.phone || '');
         setAddress(u.address || '');

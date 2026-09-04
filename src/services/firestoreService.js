@@ -1,9 +1,14 @@
-import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, query, where, orderBy, limit, serverTimestamp, onSnapshot, setDoc, getAggregateFromServer, sum, count, average } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, getDoc, query, where, orderBy, limit, serverTimestamp, onSnapshot, setDoc, getAggregateFromServer, sum, count, average } from 'firebase/firestore';
 import { db } from './firebase';
 
 export const addDocument = async (col, data) => {
   const ref = await addDoc(collection(db, col), { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
   return ref.id;
+};
+
+export const getDocument = async (col, id) => {
+  const snap = await getDoc(doc(db, col, id));
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
 };
 
 export const setDocument = async (col, id, data) => {

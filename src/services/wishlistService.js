@@ -1,5 +1,5 @@
 import { auth } from './firebase';
-import { updateDocument, getDocuments } from './firestoreService';
+import { updateDocument, getDocument } from './firestoreService';
 
 const WISHLIST_KEY = 'esencia_wishlist';
 
@@ -17,10 +17,10 @@ export const loadWishlistFromCloud = async () => {
   try {
     const userId = auth.currentUser?.uid;
     if (!userId) return getWishlist();
-    const users = await getDocuments('users', [{ field: 'uid', operator: '==', value: userId }]);
-    if (users.length > 0 && users[0].wishlist) {
-      localStorage.setItem(WISHLIST_KEY, JSON.stringify(users[0].wishlist));
-      return users[0].wishlist;
+    const userDoc = await getDocument('users', userId);
+    if (userDoc && userDoc.wishlist) {
+      localStorage.setItem(WISHLIST_KEY, JSON.stringify(userDoc.wishlist));
+      return userDoc.wishlist;
     }
     return getWishlist();
   } catch (err) {

@@ -67,33 +67,36 @@ export const subscribeToNotifications = (callback) => {
   let unsubChat = () => {};
 
   (async () => {
-    const role = await getUserRole(user.uid);
+    let role = null;
+    try { role = await getUserRole(user.uid); } catch (e) { console.error('No se pudo obtener el rol', e); }
 
-    unsubNewOrders = onSnapshot(
-      query(collection(db, 'orders'), where('status', '==', 'pendiente_confirmacion'), orderBy('createdAt', 'desc')),
-      (snapshot) => {
-        if (!initialized.orders) { initialized.orders = true; return; }
-        snapshot.docChanges().forEach(c => {
-          if (c.type === 'modified' && c.doc.data().screenshot) callback('order', prev => prev + 1);
-        });
-      }
-    );
+    if (role === 'admin') {
+      unsubNewOrders = onSnapshot(
+        query(collection(db, 'orders'), where('status', '==', 'pendiente_confirmacion'), orderBy('createdAt', 'desc')),
+        (snapshot) => {
+          if (!initialized.orders) { initialized.orders = true; return; }
+          snapshot.docChanges().forEach(c => {
+            if (c.type === 'modified' && c.doc.data().screenshot) callback('order', prev => prev + 1);
+          });
+        }
+      );
 
-    unsubPendingPayments = onSnapshot(
-      query(collection(db, 'orders'), where('paymentStatus', '==', 'pendiente'), orderBy('createdAt', 'desc')),
-      (snapshot) => {
-        if (!initialized.payments) { initialized.payments = true; return; }
-        snapshot.docChanges().forEach(c => {
-          if (c.type === 'added') callback('payment', prev => prev + 1);
-        });
-      }
-    );
+      unsubPendingPayments = onSnapshot(
+        query(collection(db, 'orders'), where('paymentStatus', '==', 'pendiente'), orderBy('createdAt', 'desc')),
+        (snapshot) => {
+          if (!initialized.payments) { initialized.payments = true; return; }
+          snapshot.docChanges().forEach(c => {
+            if (c.type === 'added') callback('payment', prev => prev + 1);
+          });
+        }
+      );
+    }
 
     let chatQuery;
     if (role === 'admin') {
       chatQuery = query(collection(db, 'chats'));
     } else {
-      chatQuery = query(collection(db, 'chats'), where('userId', '==', user.uid));
+      chatQuery = query(collection(db, 'chats'), where('userId', '==', user.uid), orderBy('lastMessageAt', 'desc'));
     }
 
     unsubChat = onSnapshot(chatQuery, (snapshot) => {
@@ -124,7 +127,8 @@ export const startListening = async () => {
   const user = auth.currentUser;
   if (!user) return;
 
-  const role = await getUserRole(user.uid);
+  let role = null;
+  try { role = await getUserRole(user.uid); } catch (e) { console.error('No se pudo obtener el rol', e); }
 
   if (role === 'admin') {
     listenNewOrders();
