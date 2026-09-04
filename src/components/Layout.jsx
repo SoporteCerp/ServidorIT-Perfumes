@@ -14,10 +14,10 @@ const customerNav = [
 ];
 
 const adminNav = [
-  { path: '/', icon: '\uD83C\uDFE0', label: 'Inicio' },
-  { path: '/catalog', icon: '\uD83D\uDECD\uFE0F', label: 'Catalogo' },
+  { path: '/panel', icon: '\uD83E\uDDED', label: 'Panel' },
   { path: '/dashboard', icon: '\uD83D\uDCE6', label: 'Pedidos' },
   { path: '/inventory', icon: '\uD83E\uDDF4', label: 'Inventario' },
+  { path: '/catalog', icon: '\uD83D\uDECD\uFE0F', label: 'Catalogo' },
 ];
 
 export default function Layout() {
@@ -59,7 +59,7 @@ export default function Layout() {
     <div className="app-layout">
       <header className="app-header">
         <div className="header-top">
-          <div style={{display:'flex',alignItems:'center',gap:10,cursor:'pointer'}} onClick={() => navigate('/')}>
+          <div style={{display:'flex',alignItems:'center',gap:10,cursor:'pointer'}} onClick={() => navigate(role === 'admin' ? '/panel' : '/')}>
             <img src="/logo.jpg" alt="Esencia Gale" style={{width:46,height:46,borderRadius:'50%',objectFit:'cover',border:'2px solid var(--primary,#D4AF37)'}} />
             <div>
               <div className="header-greeting">

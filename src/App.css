@@ -732,6 +732,7 @@ body {
 }
 .dark-mode .app-header { background: linear-gradient(135deg, #0d0d0d, #1a1400) !important; border-bottom: 1px solid #2a2418; }
 .dark-mode .card, .dark-mode .admin-card, .dark-mode .order-card, .dark-mode .stat-card,
+.dark-mode .panel-stat, .dark-mode .panel-card,
 .dark-mode .recent-order-card, .dark-mode .offer-card, .dark-mode .modal-content {
   background: #17120a !important;
   color: #f5f0dc !important;
@@ -1119,4 +1120,64 @@ body {
 * {
   scrollbar-width: none !important;
   -ms-overflow-style: none !important;
+}
+
+.panel-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.panel-stat {
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  overflow: hidden;
+}
+.panel-stat::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+}
+.panel-stat-ok::after { background: var(--success); }
+.panel-stat-warn::after { background: var(--warning); }
+.panel-stat-danger::after { background: var(--danger); }
+.panel-stat-icon { position: absolute; top: 14px; right: 14px; font-size: 22px; }
+.panel-stat-value { font-size: 24px; font-weight: 800; color: var(--gray-900); }
+.panel-stat-label { font-size: 12px; color: var(--gray-500); margin-top: 4px; text-wrap: balance; }
+
+.panel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.panel-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.panel-card:active { transform: scale(0.97); }
+.panel-card-top { display: flex; align-items: center; justify-content: space-between; }
+.panel-card-icon { font-size: 28px; }
+.panel-card-badge {
+  background: var(--danger);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+}
+.panel-card-title { font-size: 14px; font-weight: 700; color: var(--gray-900); }
+.panel-card-desc { font-size: 12px; color: var(--gray-400); line-height: 1.35; }
+.panel-card-note { font-size: 11px; color: var(--warning); font-weight: 700; }
+@media (min-width: 640px) {
+  .panel-stats { grid-template-columns: repeat(4, 1fr); }
+  .panel-grid { grid-template-columns: 1fr 1fr; }
 }

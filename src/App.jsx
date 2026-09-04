@@ -15,6 +15,7 @@ const Cart = lazy(() => import('./pages/Cart'));
 const Checkout = lazy(() => import('./pages/Checkout'));
 const Orders = lazy(() => import('./pages/Orders'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
+const AdminPanel = lazy(() => import('./pages/AdminPanel'));
 const AdminInventory = lazy(() => import('./pages/AdminInventory'));
 const Profile = lazy(() => import('./pages/Profile'));
 const AdminCoupons = lazy(() => import('./pages/AdminCoupons'));
@@ -58,6 +59,7 @@ function AppRoutes() {
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/dashboard" element={<AdminRoute><Dashboard /></AdminRoute>} />
+          <Route path="/panel" element={<AdminRoute><AdminPanel /></AdminRoute>} />
           <Route path="/inventory" element={<AdminRoute><AdminInventory /></AdminRoute>} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/wishlist" element={<Wishlist />} />
