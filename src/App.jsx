@@ -1,8 +1,9 @@
-﻿import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from './services/firebase';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { CartProvider } from './context/CartContext';
 import Layout from './components/Layout';
+import ToastContainer from './components/Toast';
 import './App.css';
 
 const Login = lazy(() => import('./pages/Login'));
@@ -23,14 +24,15 @@ const StoreLocations = lazy(() => import('./pages/StoreLocations'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const Wishlist = lazy(() => import('./pages/Wishlist'));
 
-function App() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+function AdminRoute({ children }) {
+  const { currentUser, userRole } = useAuth();
+  if (!currentUser) return <Navigate to="/login" replace />;
+  if (userRole !== 'admin') return <Navigate to="/" replace />;
+  return children;
+}
 
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, u => { setUser(u); setLoading(false); });
-    return unsub;
-  }, []);
+function AppRoutes() {
+  const { currentUser, loading } = useAuth();
 
   if (loading) return <div style={{textAlign:'center',paddingTop:100,fontSize:40}}>{'\u23F3'}</div>;
 
@@ -39,37 +41,48 @@ function App() {
   );
 
   return (
+    <Suspense fallback={pageLoader}>
+      <Routes>
+      {!currentUser ? (
+        <>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="*" element={<Navigate to="/login" />} />
+        </>
+      ) : (
+        <Route element={<Layout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/catalog" element={<Catalog />} />
+          <Route path="/product/:id" element={<ProductDetail />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/orders" element={<Orders />} />
+          <Route path="/dashboard" element={<AdminRoute><Dashboard /></AdminRoute>} />
+          <Route path="/inventory" element={<AdminRoute><AdminInventory /></AdminRoute>} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/wishlist" element={<Wishlist />} />
+          <Route path="/coupons" element={<AdminRoute><AdminCoupons /></AdminRoute>} />
+          <Route path="/chat" element={<Chat />} />
+          <Route path="/reports" element={<AdminRoute><Reports /></AdminRoute>} />
+          <Route path="/stores" element={<StoreLocations />} />
+          <Route path="/notifications" element={<Notifications />} />
+          <Route path="*" element={<Navigate to="/" />} />
+        </Route>
+      )}
+      </Routes>
+    </Suspense>
+  );
+}
+
+function App() {
+  return (
     <BrowserRouter>
-      <Suspense fallback={pageLoader}>
-        <Routes>
-        {!user ? (
-          <>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="*" element={<Navigate to="/login" />} />
-          </>
-        ) : (
-          <Route element={<Layout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/catalog" element={<Catalog />} />
-            <Route path="/product/:id" element={<ProductDetail />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/orders" element={<Orders />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/inventory" element={<AdminInventory />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/wishlist" element={<Wishlist />} />
-            <Route path="/coupons" element={<AdminCoupons />} />
-            <Route path="/chat" element={<Chat />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/stores" element={<StoreLocations />} />
-            <Route path="/notifications" element={<Notifications />} />
-            <Route path="*" element={<Navigate to="/" />} />
-          </Route>
-        )}
-        </Routes>
-      </Suspense>
+      <AuthProvider>
+        <CartProvider>
+          <AppRoutes />
+        </CartProvider>
+      </AuthProvider>
+      <ToastContainer />
     </BrowserRouter>
   );
 }

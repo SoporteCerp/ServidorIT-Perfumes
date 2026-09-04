@@ -1,7 +1,9 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
-import { getDocuments, deleteDocument, updateDocument, subscribeToDocuments } from '../services/firestoreService';
+import { getDocuments, updateDocument, subscribeToDocuments } from '../services/firestoreService';
 import { auth } from '../services/firebase';
 import OrderTracker from '../components/OrderTracker';
+import { toast } from '../components/Toast';
+import EmptyState from '../components/EmptyState';
 
 const statusConfig = {
   pendiente_confirmacion: { label: 'Esperando confirmacion', icon: '\u23F3', color: '#F59E0B', message: 'Tu comprobante esta siendo revisado' },
@@ -35,17 +37,9 @@ export default function Orders() {
     setOrders(all.filter(o => o.userId === auth.currentUser.uid));
   };
 
-  const handleDelete = async (orderId) => {
-    if (!window.confirm('\u00BFEliminar este pedido?')) return;
-    try {
-      await deleteDocument('orders', orderId);
-      setOrders(prev => prev.filter(o => o.id !== orderId));
-    } catch {}
-  };
-
   const handleResubmit = async (order) => {
-    if (!newScreenshot) { alert('Sube un comprobante'); return; }
-    if (!newRef.trim()) { alert('Escribe la referencia'); return; }
+    if (!newScreenshot) { toast.warning('Falta el comprobante', 'Sube el comprobante de pago'); return; }
+    if (!newRef.trim()) { toast.warning('Falta la referencia', 'Escribe el n\u00FAmero de referencia'); return; }
     setResubmitting(order.id);
     try {
       await updateDocument('orders', order.id, {
@@ -58,7 +52,7 @@ export default function Orders() {
       setNewRef('');
       setResubmitOrder(null);
       loadOrders();
-    } catch { alert('Error al reenviar'); }
+    } catch (e) { console.error(e); toast.error('Error', 'No se pudo reenviar el comprobante'); }
     setResubmitting(null);
   };
 
@@ -68,14 +62,14 @@ export default function Orders() {
     const { compressImage } = await import('../services/imageUtils');
     const compressed = await compressImage(file, 700, 0.6);
     if (compressed) setNewScreenshot(compressed);
-    else alert('No se pudo procesar la imagen');
+    else toast.error('Imagen', 'No se pudo procesar la imagen');
   };
 
   return (
     <>
       <h3 className="section-title mb-15">Mis Pedidos</h3>
       {orders.length === 0 ? (
-        <div className="empty-state"><div className="empty-icon">{'\uD83D\uDCE6'}</div><div className="empty-text">No tienes pedidos</div></div>
+        <EmptyState icon="📦" title="No tienes pedidos" subtext="Cuando hagas tu primer pedido lo veras aqui" />
       ) : orders.map(order => {
         const status = statusConfig[order.status] || statusConfig.pendiente;
         return (
@@ -125,14 +119,7 @@ export default function Orders() {
               </div>
             )}
 
-            <button
-              className="btn btn-outline"
-              onClick={() => handleDelete(order.id)}
-              style={{width:'100%',marginTop:10,padding:'6px 12px',fontSize:12,color:'#EF4444',borderColor:'#FECACA'}}
-            >
-              {'\uD83D\uDDD1'} Eliminar pedido
-            </button>
-          </div>
+            </div>
         );
       })}
     </>

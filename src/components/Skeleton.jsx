@@ -2,7 +2,7 @@
 
 export function SkeletonCard() {
   return (
-    <div className="skeleton-card">
+    <div className="skeleton-card" role="status" aria-label="Cargando contenido">
       <div className="skeleton-img skeleton-pulse" />
       <div style={{padding:12}}>
         <div className="skeleton-line skeleton-pulse" style={{width:'40%',height:10}} />

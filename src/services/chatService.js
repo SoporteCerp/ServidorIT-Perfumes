@@ -1,6 +1,6 @@
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, getDocs, writeBatch, doc } from 'firebase/firestore';
 import { db } from './firebase';
-import { addDocument, getDocuments } from './firestoreService';
+import { addDocument, getDocuments, updateDocument } from './firestoreService';
 
 export const sendMessage = async (chatId, senderId, senderName, text) => {
   return await addDocument(`chats/${chatId}/messages`, {
@@ -34,7 +34,6 @@ export const subscribeToChats = (callback) => {
 };
 
 export const updateChatLastMessage = async (chatId, message) => {
-  const { updateDocument } = await import('./firestoreService');
   await updateDocument('chats', chatId, { lastMessage: message, lastMessageAt: new Date() });
 };
 
@@ -44,8 +43,9 @@ export const deleteMessage = async (chatId, messageId) => {
 };
 
 export const deleteChat = async (chatId) => {
-  const { deleteDocument, getDocuments } = await import('./firestoreService');
-  const msgs = await getDocuments(`chats/${chatId}/messages`, [], 'createdAt', 'asc');
-  await Promise.all(msgs.map(m => deleteDocument(`chats/${chatId}/messages`, m.id)));
-  await deleteDocument('chats', chatId);
+  const batch = writeBatch(db);
+  const msgs = await getDocs(query(collection(db, `chats/${chatId}/messages`), orderBy('createdAt', 'asc')));
+  msgs.forEach(m => batch.delete(m.ref));
+  batch.delete(doc(db, 'chats', chatId));
+  await batch.commit();
 };

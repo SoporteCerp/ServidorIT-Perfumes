@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getWishlist, toggleWishlist } from '../services/wishlistService';
 import { getDocuments } from '../services/firestoreService';
 import { addToCart } from '../services/cartService';
+import EmptyState from '../components/EmptyState';
 
 export default function Wishlist() {
   const navigate = useNavigate();
@@ -30,12 +31,12 @@ export default function Wishlist() {
     <>
       <h3 className="section-title mb-15">Mis Favoritos</h3>
       {items.length === 0 ? (
-        <div className="empty-state"><div className="empty-icon">&#10084;&#65039;</div><div className="empty-text">No tienes favoritos</div><div className="empty-subtext">Toca el corazon en un producto para guardarlo</div></div>
+        <EmptyState icon="❤️" title="No tienes favoritos" subtext="Toca el corazon en un producto para guardarlo" />
       ) : items.map(p => (
         <div key={p.id} className="admin-card" style={{marginBottom:10}}>
           <div style={{display:'flex',gap:12,alignItems:'center'}}>
             <div style={{width:50,height:50,borderRadius:10,overflow:'hidden',flexShrink:0,background:'var(--gray-100)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:24}}>
-              {p.image ? <img src={p.image} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}} /> : '\uD83E\uDDF4'}
+              {p.image ? <img src={p.image} alt={p.name} style={{width:'100%',height:'100%',objectFit:'cover'}} /> : '\uD83E\uDDF4'}
             </div>
             <div style={{flex:1,cursor:'pointer'}} onClick={() => navigate('/product/' + p.id)}>
               <div style={{fontSize:11,fontWeight:600,color:'var(--primary)'}}>{p.brand}</div>
@@ -43,8 +44,8 @@ export default function Wishlist() {
               <div style={{fontSize:14,fontWeight:700,color:'var(--primary-dark)'}}>${p.price}</div>
             </div>
             <div style={{display:'flex',gap:6}}>
-              <button className="btn btn-sm btn-primary" onClick={() => { addToCart(p, 1); navigate('/cart'); }}>{'\uD83D\uDED2'}</button>
-              <button className="btn btn-sm btn-outline" onClick={() => remove(p.id)} style={{color:'var(--danger)'}}>{'\u2764\uFE0F'}</button>
+              <button className="btn btn-sm btn-primary" onClick={() => { addToCart(p, 1); navigate('/cart'); }} aria-label={`Agregar ${p.name} al carrito`}>{'\uD83D\uDED2'}</button>
+              <button className="btn btn-sm btn-outline" onClick={() => remove(p.id)} style={{color:'var(--danger)'}} aria-label={`Quitar ${p.name} de favoritos`}>{'\u2764\uFE0F'}</button>
             </div>
           </div>
         </div>

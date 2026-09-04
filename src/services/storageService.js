@@ -33,5 +33,5 @@ export const deleteProfilePhoto = async (path) => {
   try {
     const storageRef = ref(storage, path);
     await deleteObject(storageRef);
-  } catch {}
+  } catch (e) { console.warn('No se pudo eliminar la foto previa:', e); }
 };

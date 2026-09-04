@@ -1,6 +1,7 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { getReviews, addReview, deleteReview } from '../services/reviewService';
 import { auth } from '../services/firebase';
+import { toast } from './Toast';
 
 export default function Reviews({ productId }) {
   const [reviews, setReviews] = useState([]);
@@ -24,14 +25,17 @@ export default function Reviews({ productId }) {
       setComment('');
       setRating(5);
       loadReviews();
-    } catch {}
+      toast.success('Resena publicada');
+    } catch (e) { console.error('Error al publicar resena', e); toast.error('Error', 'No se pudo publicar tu resena'); }
     setSubmitting(false);
   };
 
   const handleDelete = async (reviewId) => {
     if (!confirm('Eliminar esta resena?')) return;
-    await deleteReview(reviewId);
-    loadReviews();
+    try {
+      await deleteReview(reviewId);
+      loadReviews();
+    } catch (e) { console.error('Error al eliminar resena', e); toast.error('Error', 'No se pudo eliminar la resena'); }
   };
 
   const avg = reviews.length > 0 ? (reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length).toFixed(1) : 0;
@@ -48,7 +52,14 @@ export default function Reviews({ productId }) {
           <div style={{fontSize:14,fontWeight:600,marginBottom:8}}>Tu resena</div>
           <div style={{display:'flex',gap:4,marginBottom:10}}>
             {[1,2,3,4,5].map(s => (
-              <span key={s} onClick={() => setRating(s)} style={{fontSize:24,cursor:'pointer',color: s <= rating ? '#F59E0B' : 'var(--gray-200)'}}>{'\u2605'}</span>
+              <button
+                key={s}
+                type="button"
+                onClick={() => setRating(s)}
+                aria-label={`${s} estrella${s > 1 ? 's' : ''}`}
+                aria-pressed={s <= rating}
+                style={{fontSize:24,cursor:'pointer',color: s <= rating ? '#F59E0B' : 'var(--gray-200)',background:'none',border:'none',padding:0}}
+              >{'\u2605'}</button>
             ))}
           </div>
           <textarea className="form-input" placeholder="Cuentanos que te parecio..." value={comment} onChange={e => setComment(e.target.value)} style={{minHeight:60}} />

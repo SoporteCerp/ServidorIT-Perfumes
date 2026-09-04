@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { auth } from '../services/firebase';
-import { getUserRole } from '../services/authService';
+import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { getDocuments } from '../services/firestoreService';
-import { addToCart } from '../services/cartService';
 import ImageViewer from '../components/ImageViewer';
+import EmptyState from '../components/EmptyState';
 
 export default function Catalog() {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
+  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('todos');
   const [brandFilter, setBrandFilter] = useState('');
@@ -17,7 +18,10 @@ export default function Catalog() {
   const [sort, setSort] = useState('default');
   const [quantities, setQuantities] = useState({});
   const [added, setAdded] = useState({});
-  const [role, setRole] = useState('customer');
+  
+  const { userRole: role } = useAuth();
+  const { addToCart } = useCart();
+  
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerImages, setViewerImages] = useState([]);
   const [viewerName, setViewerName] = useState('');
@@ -34,10 +38,14 @@ export default function Catalog() {
 
   useEffect(() => {
     loadProducts();
-    if (auth.currentUser) {
-      getUserRole(auth.currentUser.uid).then(r => setRole(r || 'customer')).catch(() => setRole('customer'));
-    }
   }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   const loadProducts = async () => {
     const data = await getDocuments('products', [], 'name', 'asc');
@@ -54,29 +62,35 @@ export default function Catalog() {
     setTimeout(() => setAdded(prev => ({ ...prev, [p.id]: false })), 1500);
   };
 
-  const brandMap = {};
-  products.forEach(p => { if (p.brand) brandMap[p.brand] = (brandMap[p.brand] || 0) + 1; });
-  const brands = Object.keys(brandMap).sort();
+  const brands = useMemo(() => {
+    const brandMap = {};
+    products.forEach(p => { if (p.brand) brandMap[p.brand] = (brandMap[p.brand] || 0) + 1; });
+    return Object.keys(brandMap).sort();
+  }, [products]);
 
-  const filtered = products.filter(p => {
-    const matchSearch = p.name?.toLowerCase().includes(search.toLowerCase()) || p.brand?.toLowerCase().includes(search.toLowerCase());
-    const matchFilter = filter === 'todos' || p.category === filter;
-    const matchBrand = !brandFilter || p.brand === brandFilter;
-    const price = parseFloat(p.price) || 0;
-    const matchMin = minPrice === '' || price >= parseFloat(minPrice);
-    const matchMax = maxPrice === '' || price <= parseFloat(maxPrice);
-    return matchSearch && matchFilter && matchBrand && matchMin && matchMax;
-  });
+  const filtered = useMemo(() => {
+    const result = products.filter(p => {
+      const matchSearch = p.name?.toLowerCase().includes(search.toLowerCase()) || p.brand?.toLowerCase().includes(search.toLowerCase());
+      const matchFilter = filter === 'todos' || p.category === filter;
+      const matchBrand = !brandFilter || p.brand === brandFilter;
+      const price = parseFloat(p.price) || 0;
+      const matchMin = minPrice === '' || price >= parseFloat(minPrice);
+      const matchMax = maxPrice === '' || price <= parseFloat(maxPrice);
+      return matchSearch && matchFilter && matchBrand && matchMin && matchMax;
+    });
 
-  if (sort === 'price-asc') filtered.sort((a, b) => (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0));
-  else if (sort === 'price-desc') filtered.sort((a, b) => (parseFloat(b.price) || 0) - (parseFloat(a.price) || 0));
-  else if (sort === 'name') filtered.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    if (sort === 'price-asc') result.sort((a, b) => (parseFloat(a.price) || 0) - (parseFloat(b.price) || 0));
+    else if (sort === 'price-desc') result.sort((a, b) => (parseFloat(b.price) || 0) - (parseFloat(a.price) || 0));
+    else if (sort === 'name') result.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+    return result;
+  }, [products, search, filter, brandFilter, minPrice, maxPrice, sort]);
 
   const firstLine = (desc) => desc ? desc.split('\n')[0] : '';
 
   return (
     <>
-      <input className="search-bar" placeholder="Buscar perfume..." value={search} onChange={e => setSearch(e.target.value)} />
+      <input className="search-bar" placeholder="Buscar perfume..." value={searchInput} onChange={e => setSearchInput(e.target.value)} />
       <div className="filter-row">
         {[{v:'todos',l:'Todos'},{v:'hombre',l:'Hombre'},{v:'mujer',l:'Mujer'},{v:'unisex',l:'Unisex'},{v:'ofertas',l:'Ofertas'},{v:'nuevos',l:'Nuevos'},{v:'importados',l:'Importados'}].map(f => (
           <button key={f.v} className={`filter-chip ${filter === f.v ? 'active' : ''}`} onClick={() => setFilter(f.v)}>{f.l}</button>
@@ -99,7 +113,7 @@ export default function Catalog() {
         <input className="price-input" placeholder="Precio max" type="number" value={maxPrice} onChange={e => setMaxPrice(e.target.value)} />
       </div>
       {filtered.length === 0 ? (
-        <div className="empty-state"><div className="empty-icon">🧴</div><div className="empty-text">No hay productos</div></div>
+        <EmptyState icon="🧴" title="No hay productos" subtext={filter !== 'todos' ? 'Prueba con otro filtro o categoria' : undefined} />
       ) : (
         <div className="product-grid">
           {filtered.map(p => (
@@ -118,11 +132,11 @@ export default function Catalog() {
                 {(
                   <div style={{display:'flex',alignItems:'center',gap:8,marginTop:10}} onClick={e => e.stopPropagation()}>
                     <div className="catalog-qty">
-                      <button onClick={(e) => { e.stopPropagation(); setQty(p.id, Math.max(1, (quantities[p.id] || 1) - 1)); }}>-</button>
+                      <button onClick={(e) => { e.stopPropagation(); setQty(p.id, Math.max(1, (quantities[p.id] || 1) - 1)); }} aria-label={`Quitar cantidad de ${p.name}`}>-</button>
                       <span>{quantities[p.id] || 1}</span>
-                      <button onClick={(e) => { e.stopPropagation(); const max = p.stock || 99; setQty(p.id, Math.min(max, (quantities[p.id] || 1) + 1)); }}>+</button>
+                      <button onClick={(e) => { e.stopPropagation(); const max = p.stock || 99; setQty(p.id, Math.min(max, (quantities[p.id] || 1) + 1)); }} aria-label={`Agregar cantidad de ${p.name}`}>+</button>
                     </div>
-                    <button className={`catalog-add ${added[p.id] ? 'added' : ''}`} onClick={(e) => handleAdd(e, p)}>
+                    <button className={`catalog-add ${added[p.id] ? 'added' : ''}`} onClick={(e) => handleAdd(e, p)} aria-label={`Agregar ${p.name} al carrito`}>
                       {added[p.id] ? '✓' : (
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <circle cx="9" cy="21" r="1"></circle>

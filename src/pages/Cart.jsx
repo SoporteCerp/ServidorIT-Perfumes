@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCart, updateCartQuantity, removeFromCart, getCartTotal } from '../services/cartService';
+import EmptyState from '../components/EmptyState';
 
 const IVA_RATE = 0.07;
 
@@ -20,24 +21,20 @@ export default function Cart() {
     <>
       <h3 className="section-title mb-15">Mi Carrito</h3>
       {cart.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-icon">🛒</div>
-          <div className="empty-text">Tu carrito esta vacio</div>
-          <button className="btn btn-primary" style={{marginTop:20,maxWidth:250,margin:'20px auto 0'}} onClick={() => navigate('/')}>Ver Catalogo</button>
-        </div>
+        <EmptyState icon="🛒" title="Tu carrito esta vacio" subtext="Explora el catalogo y encuentra tu fragancia ideal" actionLabel="Ver Catalogo" onAction={() => navigate('/')} />
       ) : (
         <>
           {cart.map(item => (
             <div key={item.id} className="cart-item">
-              <div className="cart-item-image">{item.image ? <img src={item.image} alt="" style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:10}} /> : '🧴'}</div>
+              <div className="cart-item-image">{item.image ? <img src={item.image} alt={item.name} style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:10}} /> : '🧴'}</div>
               <div className="cart-item-info">
                 <div className="cart-item-name">{item.name}</div>
                 <div className="cart-item-price">${(item.price * item.quantity).toFixed(2)}</div>
                 <div className="cart-item-qty">
-                  <button className="cart-qty-btn" onClick={() => updateQty(item.id, item.quantity - 1)}>−</button>
+                  <button className="cart-qty-btn" onClick={() => updateQty(item.id, item.quantity - 1)} aria-label={`Quitar una unidad de ${item.name}`}>−</button>
                   <span>{item.quantity}</span>
-                  <button className="cart-qty-btn" onClick={() => updateQty(item.id, item.quantity + 1)}>+</button>
-                  <button className="cart-qty-btn" style={{color:'var(--danger)',marginLeft:8}} onClick={() => remove(item.id)}>✕</button>
+                  <button className="cart-qty-btn" onClick={() => updateQty(item.id, item.quantity + 1)} aria-label={`Agregar una unidad de ${item.name}`}>+</button>
+                  <button className="cart-qty-btn" style={{color:'var(--danger)',marginLeft:8}} onClick={() => remove(item.id)} aria-label={`Eliminar ${item.name} del carrito`}>✕</button>
                 </div>
               </div>
             </div>

@@ -1,34 +1,26 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getDocuments } from '../services/firestoreService';
 
 export default function Reports() {
   const [orders, setOrders] = useState([]);
   const [period, setPeriod] = useState('month');
 
-  useEffect(() => { loadOrders(); }, []);
+  useEffect(() => { loadOrders(); }, [period]);
 
   const loadOrders = async () => {
-    const data = await getDocuments('orders');
+    const now = new Date();
+    let startDate;
+    if (period === 'week') startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    else if (period === 'month') startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    else if (period === 'year') startDate = new Date(now.getFullYear(), 0, 1);
+
+    const filters = startDate ? [{ field: 'createdAt', operator: '>=', value: startDate }] : [];
+    
+    const data = await getDocuments('orders', filters, 'createdAt', 'desc', 500);
     setOrders(data.filter(o => o.status === 'pagado' || o.status === 'entregado'));
   };
 
-  const getFilteredOrders = () => {
-    const now = new Date();
-    return orders.filter(o => {
-      const date = o.createdAt ? new Date(o.createdAt.seconds * 1000) : new Date();
-      if (period === 'week') {
-        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        return date >= weekAgo;
-      } else if (period === 'month') {
-        return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
-      } else if (period === 'year') {
-        return date.getFullYear() === now.getFullYear();
-      }
-      return true;
-    });
-  };
-
-  const filtered = getFilteredOrders();
+  const filtered = orders;
   const totalRevenue = filtered.reduce((sum, o) => sum + (o.total || 0), 0);
   const totalOrders = filtered.length;
   const avgOrder = totalOrders > 0 ? totalRevenue / totalOrders : 0;

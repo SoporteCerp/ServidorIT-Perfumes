@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../services/firebase';
 import { logoutUser, getUserRole } from '../services/authService';
-import { getDocuments, updateDocument, addDocument } from '../services/firestoreService';
+import { getDocuments, updateDocument, setDocument } from '../services/firestoreService';
 import { uploadProfilePhoto } from '../services/storageService';
 import { setLanguage, getLanguage, t } from '../services/i18n';
+import { toast } from '../components/Toast';
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -42,11 +43,11 @@ export default function Profile() {
         if (u.photoURL) setPhotoURL(u.photoURL);
         else if (u.photoUrl) setPhotoURL(u.photoUrl);
       }
-    } catch {}
+    } catch (e) { console.error('Error al cargar perfil', e); }
   };
 
   const handleSave = async () => {
-    if (!name) { alert(t('name') + ' required'); return; }
+    if (!name) { toast.warning('Nombre requerido'); return; }
     setLoading(true);
     try {
       if (userId) {
@@ -54,24 +55,24 @@ export default function Profile() {
       }
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } catch {}
+    } catch (e) { console.error('Error al guardar perfil', e); toast.error('Error', 'No se pudo guardar el perfil'); }
     setLoading(false);
   };
 
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) { alert('Please select an image'); return; }
+    if (!file.type.startsWith('image/')) { toast.error('Formato inv\u00E1lido', 'Selecciona una imagen'); return; }
     setUploading(true);
     try {
       const url = await uploadProfilePhoto(user.uid, file);
       setPhotoURL(url);
       if (userId) await updateDocument('users', userId, { photoURL: url });
       else if (user.uid) {
-        const ref = await addDocument('users', { uid: user.uid, name, photoURL: url, role });
-        setUserId(ref);
+        await setDocument('users', user.uid, { uid: user.uid, name, photoURL: url, role: role || 'customer' });
+        setUserId(user.uid);
       }
-    } catch { alert('Upload failed'); }
+    } catch (e) { console.error('Error al subir foto', e); toast.error('Error', 'No se pudo subir la foto'); }
     setUploading(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -125,18 +126,18 @@ export default function Profile() {
       )}
 
       <div className="form-group">
-        <label className="form-label">{t('profile')} Name</label>
-        <input className="form-input" value={name} onChange={e => setName(e.target.value)} />
+        <label className="form-label" htmlFor="profile-name">{t('profile')} Name</label>
+        <input id="profile-name" className="form-input" value={name} onChange={e => setName(e.target.value)} />
       </div>
 
       <div className="form-group">
-        <label className="form-label">Phone</label>
-        <input className="form-input" placeholder="6000-1234" value={phone} onChange={e => setPhone(e.target.value)} />
+        <label className="form-label" htmlFor="profile-phone">Phone</label>
+        <input id="profile-phone" className="form-input" placeholder="6000-1234" value={phone} onChange={e => setPhone(e.target.value)} />
       </div>
 
       <div className="form-group">
-        <label className="form-label">Address</label>
-        <input className="form-input" placeholder="Delivery address" value={address} onChange={e => setAddress(e.target.value)} />
+        <label className="form-label" htmlFor="profile-address">Address</label>
+        <input id="profile-address" className="form-input" placeholder="Delivery address" value={address} onChange={e => setAddress(e.target.value)} />
       </div>
 
       {saved && <p style={{color:'var(--success)',textAlign:'center',marginBottom:10}}>Saved!</p>}

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getDocuments } from '../services/firestoreService';
 
@@ -37,6 +37,7 @@ function AutoCarousel({ items, navigate }) {
     const el = container.current;
     const speed = 2000;
     const interval = setInterval(() => {
+      if (document.hidden) return;
       const step = el.clientWidth / 2;
       if (el.scrollLeft + el.clientWidth >= el.scrollWidth - 10) {
         el.scrollTo({ left: 0, behavior: 'smooth' });

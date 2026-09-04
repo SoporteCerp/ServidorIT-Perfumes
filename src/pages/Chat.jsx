@@ -3,6 +3,7 @@ import { auth } from '../services/firebase';
 import { getUserRole } from '../services/authService';
 import { getOrCreateChat, sendMessage, subscribeToMessages, subscribeToChats, updateChatLastMessage, deleteMessage, deleteChat } from '../services/chatService';
 import { clearNotificationType, setChatActive } from '../services/notificationService';
+import EmptyState from '../components/EmptyState';
 
 export default function Chat() {
   const [messages, setMessages] = useState([]);
@@ -80,7 +81,7 @@ export default function Chat() {
       <>
         <h3 className="section-title mb-15">Mensajes</h3>
         {chats.length === 0 ? (
-          <div className="empty-state"><div className="empty-icon">💬</div><div className="empty-text">No hay conversaciones</div></div>
+          <EmptyState icon="💬" title="No hay conversaciones" />
         ) : chats.map(c => (
           <div key={c.id} className="admin-card" style={{cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
             <div style={{flex:1}} onClick={() => selectChat(c)}>

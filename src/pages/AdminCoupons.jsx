@@ -1,5 +1,7 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { getCoupons, addCoupon, deleteCoupon } from '../services/couponService';
+import { getCoupons, addCoupon, deleteCoupon, updateCoupon } from '../services/couponService';
+import { toast } from '../components/Toast';
+import EmptyState from '../components/EmptyState';
 
 export default function AdminCoupons() {
   const [coupons, setCoupons] = useState([]);
@@ -18,31 +20,41 @@ export default function AdminCoupons() {
     setCoupons(data);
   };
 
+  const hasUnsaved = code || discount || minPurchase || expiresAt;
+
+  const closeModal = () => {
+    if (hasUnsaved && !confirm('\u00BFDescartar los cambios del cup\u00F3n?')) return;
+    setModalOpen(false);
+  };
+
   const handleAdd = async (e) => {
     e.preventDefault();
-    if (!code) { alert('Codigo obligatorio'); return; }
-    if (type !== 'free_shipping' && !discount) { alert('Descuento obligatorio'); return; }
+    if (!code) { toast.warning('C\u00F3digo obligatorio'); return; }
+    if (type !== 'free_shipping' && !discount) { toast.warning('Descuento obligatorio'); return; }
     setLoading(true);
     try {
       await addCoupon(code, type === 'free_shipping' ? 0 : parseFloat(discount), type, parseFloat(minPurchase) || 0, expiresAt ? new Date(expiresAt) : null);
       setModalOpen(false);
       setCode(''); setDiscount(''); setMinPurchase(''); setExpiresAt('');
       loadCoupons();
-    } catch {}
+    } catch (e) { console.error('Error al crear cupon', e); toast.error('Error', 'No se pudo crear el cup\u00F3n'); }
     setLoading(false);
   };
 
   const handleDelete = async (id, couponCode) => {
     if (confirm(`Eliminar cupon "${couponCode}"?`)) {
-      await deleteCoupon(id);
-      loadCoupons();
+      try {
+        await deleteCoupon(id);
+        loadCoupons();
+      } catch (e) { console.error('Error al eliminar cupon', e); toast.error('Error', 'No se pudo eliminar el cup\u00F3n'); }
     }
   };
 
   const toggleActive = async (id, active) => {
-    const { updateCoupon } = await import('../services/couponService');
-    await updateCoupon(id, { active: !active });
-    loadCoupons();
+    try {
+      await updateCoupon(id, { active: !active });
+      loadCoupons();
+    } catch (e) { console.error('Error al actualizar cupon', e); toast.error('Error', 'No se pudo actualizar el cup\u00F3n'); }
   };
 
   const couponTypeLabel = (c) => {
@@ -56,7 +68,7 @@ export default function AdminCoupons() {
       <h3 className="section-title mb-15">Cupones de Descuento</h3>
 
       {coupons.length === 0 ? (
-        <div className="empty-state"><div className="empty-icon">{'\uD83C\uDFF7\uFE0F'}</div><div className="empty-text">No hay cupones</div></div>
+        <EmptyState icon="🏷️" title="No hay cupones" subtext="Crea el primer cupon de descuento" />
       ) : coupons.map(c => (
         <div key={c.id} className="admin-card" style={!c.active ? {opacity:0.5} : {}}>
           <div className="admin-header">
@@ -79,10 +91,10 @@ export default function AdminCoupons() {
         </div>
       ))}
 
-      <button className="fab" onClick={() => setModalOpen(true)}>+</button>
+      <button className="fab" onClick={() => setModalOpen(true)} aria-label="Agregar cupon">+</button>
 
       {modalOpen && (
-        <div className="modal-overlay" onClick={() => setModalOpen(false)}>
+        <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <h2 className="modal-title">Nuevo Cupon</h2>
             <form onSubmit={handleAdd}>
@@ -98,7 +110,7 @@ export default function AdminCoupons() {
               <div className="form-group"><input className="form-input" placeholder="Compra minima (opcional)" type="number" value={minPurchase} onChange={e => setMinPurchase(e.target.value)} /></div>
               <div className="form-group"><input className="form-input" type="date" value={expiresAt} onChange={e => setExpiresAt(e.target.value)} /></div>
               <div className="modal-actions">
-                <button type="button" className="btn btn-outline" onClick={() => setModalOpen(false)}>Cancelar</button>
+                <button type="button" className="btn btn-outline" onClick={closeModal}>Cancelar</button>
                 <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? 'Creando...' : 'Crear Cupon'}</button>
               </div>
             </form>

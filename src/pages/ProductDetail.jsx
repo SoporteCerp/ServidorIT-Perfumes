@@ -130,8 +130,8 @@ export default function ProductDetail() {
         return images.length > 1 ? (
           <div className="gallery-thumbs">
             {images.map((img, i) => (
-              <div key={i} className={`gallery-thumb ${i === imageIndex ? 'active' : ''}`} onClick={() => setImageIndex(i)}>
-                <img src={img} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}} />
+              <div key={i} className={`gallery-thumb ${i === imageIndex ? 'active' : ''}`} onClick={() => setImageIndex(i)} role="button" tabIndex={0} aria-label={`Ver imagen ${i + 1} de ${product.name}`} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setImageIndex(i); } }}>
+                <img src={img} alt={product.name} style={{width:'100%',height:'100%',objectFit:'cover'}} />
               </div>
             ))}
           </div>
@@ -173,9 +173,9 @@ export default function ProductDetail() {
         {product.stock > 0 ? (
           <>
             <div className="quantity-control">
-              <button className="qty-btn" onClick={() => setQty(Math.max(1, qty - 1))}>-</button>
+              <button className="qty-btn" onClick={() => setQty(Math.max(1, qty - 1))} aria-label="Disminuir cantidad">-</button>
               <span className="qty-number">{qty}</span>
-              <button className="qty-btn" onClick={() => setQty(Math.min(product.stock, qty + 1))}>+</button>
+              <button className="qty-btn" onClick={() => setQty(Math.min(product.stock, qty + 1))} aria-label="Aumentar cantidad">+</button>
             </div>
 
             <button className="btn btn-primary" onClick={handleAdd}>

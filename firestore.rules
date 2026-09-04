@@ -1,47 +1,96 @@
-﻿rules_version = '2';
+rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == 'esenciagale@gmail.com';
+    }
+
+    // Public catalog: anyone reads, only admin writes
     match /products/{productId} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.token.email == 'esenciagale@gmail.com';
+      allow write: if isAdmin();
     }
+
+    // Orders: owner creates their order and can resubmit proof/reference
+    // (only safe fields). Admin manages money fields and status transitions.
     match /orders/{orderId} {
-      allow read: if request.auth != null && (resource.data.userId == request.auth.uid || request.auth.token.email == 'esenciagale@gmail.com');
-      allow create: if request.auth != null;
-      allow update: if request.auth != null && (resource.data.userId == request.auth.uid || request.auth.token.email == 'esenciagale@gmail.com');
-      allow delete: if request.auth != null && (resource.data.userId == request.auth.uid || request.auth.token.email == 'esenciagale@gmail.com');
+      allow read: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update: if isAdmin() || (
+        request.auth != null
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.paymentStatus == 'pendiente'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['screenshot', 'reference', 'status', 'paymentStatus', 'updatedAt'])
+      );
+      allow delete: if isAdmin();
     }
+
+    // Chats: owner creates/reads/writes their chat and messages; admin all access
     match /chats/{chatId} {
-      allow read, write: if request.auth != null;
+      allow read: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
       match /messages/{messageId} {
-        allow read, write: if request.auth != null;
+        allow read, write: if request.auth != null && (get(/databases/$(database)/documents/chats/$(chatId)).data.userId == request.auth.uid || isAdmin());
       }
     }
+
+    // Users: each user only reads/edits their own doc (keyed by uid).
+    // Role/email/uid cannot be touched by the user.
     match /users/{userId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow create: if isAdmin() || (request.auth != null && request.auth.uid == userId && request.resource.data.role == 'customer');
+      allow update: if isAdmin() || (
+        request.auth != null
+        && request.auth.uid == userId
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'email', 'uid'])
+      );
+      allow delete: if isAdmin();
     }
+
+    // Carts: only the owner can read/write their own cart (keyed by uid)
     match /carts/{cartId} {
-      allow read, write: if request.auth != null;
+      allow read: if request.auth != null && cartId == request.auth.uid;
+      allow create, update: if request.auth != null && cartId == request.auth.uid && request.resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && cartId == request.auth.uid;
     }
+
     match /coupons/{couponId} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.token.email == 'esenciagale@gmail.com';
+      allow write: if isAdmin();
     }
+
     match /reviews/{reviewId} {
       allow read: if true;
-      allow create: if request.auth != null;
-      allow delete: if request.auth != null && (resource.data.userId == request.auth.uid || request.auth.token.email == 'esenciagale@gmail.com');
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
     }
+
     match /priceHistory/{id} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
+
+    // Notifications: user reads their own; only admin writes
     match /notifications/{notifId} {
-      allow read, write: if request.auth != null;
+      allow read: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if isAdmin();
     }
+
+    // FCM tokens: stored with userId field (auto-generated id)
     match /fcmTokens/{tokenId} {
-      allow read, write: if request.auth != null;
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // Store locations: anyone reads, only admin writes
+    match /locations/{locationId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
   }
 }

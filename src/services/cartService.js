@@ -1,5 +1,5 @@
 import { auth } from './firebase';
-import { getDocuments, addDocument, updateDocument, deleteDocument } from './firestoreService';
+import { getDocuments, setDocument } from './firestoreService';
 
 const CART_KEY = 'servidorit_cart';
 
@@ -7,18 +7,20 @@ const syncToFirestore = async (cart) => {
   try {
     const userId = auth.currentUser?.uid;
     if (!userId) return;
-    const existing = await getDocuments('carts', [{ field: 'userId', operator: '==', value: userId }]);
-    if (existing.length > 0) {
-      await updateDocument('carts', existing[0].id, { items: cart, updatedAt: new Date() });
-    } else if (cart.length > 0) {
-      await addDocument('carts', { userId, items: cart });
-    }
-  } catch {}
+    await setDocument('carts', userId, { items: cart, userId });
+  } catch (err) {
+    console.error('Error syncing cart to Firestore:', err);
+  }
 };
 
 export const getCart = () => {
-  const cart = localStorage.getItem(CART_KEY);
-  return cart ? JSON.parse(cart) : [];
+  try {
+    const cart = localStorage.getItem(CART_KEY);
+    return cart ? JSON.parse(cart) : [];
+  } catch (err) {
+    console.error('Error parsing cart from localStorage:', err);
+    return [];
+  }
 };
 
 export const loadCartFromCloud = async () => {
@@ -31,41 +33,50 @@ export const loadCartFromCloud = async () => {
       return carts[0].items;
     }
     return getCart();
-  } catch { return getCart(); }
+  } catch (err) {
+    console.error('Error loading cart from cloud:', err);
+    return getCart();
+  }
 };
 
 export const addToCart = (product, quantity = 1) => {
   const cart = getCart();
   const existing = cart.find(item => item.id === product.id);
+  
+  let newCart;
   if (existing) {
-    existing.quantity += quantity;
+    newCart = cart.map(item => 
+      item.id === product.id ? { ...item, quantity: item.quantity + quantity } : item
+    );
   } else {
-    cart.push({ ...product, quantity });
+    newCart = [...cart, { ...product, quantity }];
   }
-  localStorage.setItem(CART_KEY, JSON.stringify(cart));
-  syncToFirestore(cart);
-  return cart;
+  
+  localStorage.setItem(CART_KEY, JSON.stringify(newCart));
+  syncToFirestore(newCart);
+  return newCart;
 };
 
 export const updateCartQuantity = (productId, quantity) => {
+  if (quantity <= 0) return removeFromCart(productId);
+  
   const cart = getCart();
-  const item = cart.find(i => i.id === productId);
-  if (item) {
-    if (quantity <= 0) {
-      return removeFromCart(productId);
-    }
-    item.quantity = quantity;
-  }
-  localStorage.setItem(CART_KEY, JSON.stringify(cart));
-  syncToFirestore(cart);
-  return cart;
+  const newCart = cart.map(item => 
+    item.id === productId ? { ...item, quantity } : item
+  );
+  
+  localStorage.setItem(CART_KEY, JSON.stringify(newCart));
+  syncToFirestore(newCart);
+  return newCart;
 };
 
 export const removeFromCart = (productId) => {
-  const cart = getCart().filter(item => item.id !== productId);
-  localStorage.setItem(CART_KEY, JSON.stringify(cart));
-  syncToFirestore(cart);
-  return cart;
+  const cart = getCart();
+  const newCart = cart.filter(item => item.id !== productId);
+  
+  localStorage.setItem(CART_KEY, JSON.stringify(newCart));
+  syncToFirestore(newCart);
+  return newCart;
 };
 
 export const clearCart = () => {

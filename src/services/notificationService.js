@@ -2,6 +2,7 @@
 import { db, auth, messaging } from './firebase';
 import { getUserRole } from './authService';
 import { getToken, onMessage } from 'firebase/messaging';
+import { toast } from '../components/Toast';
 
 let unsubscribers = [];
 let shownOrderIds = new Set();
@@ -38,7 +39,7 @@ const saveFCMToken = async (token) => {
     } else {
       await updateDoc(tokens.docs[0].ref, { token, updatedAt: new Date() });
     }
-  } catch (err) {}
+  } catch (err) { console.warn('No se pudo guardar el token FCM', err); }
 };
 
 export const setupForegroundListener = () => {
@@ -53,20 +54,7 @@ export const setupForegroundListener = () => {
 };
 
 export const showToast = (title, message) => {
-  const existing = document.getElementById('toast-notification');
-  if (existing) existing.remove();
-  const toast = document.createElement('div');
-  toast.id = 'toast-notification';
-  toast.style.cssText = `
-    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-    background: #1a1a2e; color: #fff; padding: 15px 20px; border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3); z-index: 9999; max-width: 90%;
-    animation: slideDown 0.3s ease; cursor: pointer; font-size: 14px;
-  `;
-  toast.innerHTML = '<strong>' + title + '</strong><br/>' + message;
-  toast.onclick = () => toast.remove();
-  document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 5000);
+  toast.info(title, message);
 };
 
 export const subscribeToNotifications = (callback) => {

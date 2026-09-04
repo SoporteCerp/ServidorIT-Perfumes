@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { getDocuments, addDocument, updateDocument, deleteDocument } from '../services/firestoreService';
 import { auth } from '../services/firebase';
 import { getUserRole } from '../services/authService';
+import { toast } from '../components/Toast';
+import EmptyState from '../components/EmptyState';
 
 export default function StoreLocations() {
   const [locations, setLocations] = useState([]);
@@ -29,15 +31,17 @@ export default function StoreLocations() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name || !form.address) { alert('Nombre y direccion obligatorios'); return; }
-    if (editingId) {
-      await updateDocument('locations', editingId, form);
-    } else {
-      await addDocument('locations', form);
-    }
-    setModalOpen(false);
-    const data = await getDocuments('locations', [], 'name', 'asc');
-    setLocations(data);
+    if (!form.name || !form.address) { toast.warning('Faltan datos', 'Nombre y direcci\u00F3n son obligatorios'); return; }
+    try {
+      if (editingId) {
+        await updateDocument('locations', editingId, form);
+      } else {
+        await addDocument('locations', form);
+      }
+      setModalOpen(false);
+      const data = await getDocuments('locations', [], 'name', 'asc');
+      setLocations(data);
+    } catch (err) { console.error('Error al guardar tienda', err); toast.error('Error', 'No se pudo guardar la tienda'); }
   };
 
   const handleDelete = async (id, name) => {
@@ -57,7 +61,7 @@ export default function StoreLocations() {
       <h3 className="section-title mb-15">🏪 Nuestras Tiendas</h3>
 
       {locations.length === 0 ? (
-        <div className="empty-state"><div className="empty-icon">🏪</div><div className="empty-text">No hay tiendas registradas</div></div>
+        <EmptyState icon="🏪" title="No hay tiendas registradas" />
       ) : locations.map(loc => (
         <div key={loc.id} className="admin-card" style={{cursor: loc.mapUrl ? 'pointer' : 'default'}} onClick={() => openInMaps(loc.mapUrl)}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
@@ -79,7 +83,7 @@ export default function StoreLocations() {
       ))}
 
       {role === 'admin' && (
-        <button className="fab" onClick={openAdd}>+</button>
+        <button className="fab" onClick={openAdd} aria-label="Agregar tienda">+</button>
       )}
 
       {modalOpen && (

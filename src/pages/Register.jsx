@@ -18,7 +18,7 @@ export default function Register() {
     if (password.length < 6) { setError('Minimo 6 caracteres'); return; }
     setLoading(true); setError('');
     try { await registerUser(email, password, name); navigate('/'); }
-    catch (err) { setError(err.message || 'Error al registrar'); }
+    catch (err) { setError('Error al registrar. Por favor, revisa tus datos e intenta de nuevo.'); }
     finally { setLoading(false); }
   };
 

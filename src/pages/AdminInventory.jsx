@@ -2,6 +2,8 @@
 import { getDocuments, addDocument, updateDocument, deleteDocument } from '../services/firestoreService';
 import { recordPrice } from '../services/priceHistoryService';
 import { uploadProductImage } from '../services/storageService';
+import { toast } from '../components/Toast';
+import EmptyState from '../components/EmptyState';
 
 const defaultForm = { name: '', brand: '', price: '', cost: '', stock: '', minStock: '', category: 'unisex', description: '', image: '', images: [] };
 
@@ -34,7 +36,7 @@ export default function AdminInventory() {
     const files = Array.from(e.target.files || []);
     files.forEach(file => {
       if (!file) return;
-      if (file.size > 800000) { alert('Imagen muy grande. Maximo 800KB.'); return; }
+      if (file.size > 800000) { toast.warning('Imagen muy grande', 'M\u00E1ximo 800KB'); return; }
       const reader = new FileReader();
       reader.onload = (ev) => {
         setForm(prev => {
@@ -49,7 +51,8 @@ export default function AdminInventory() {
 
   const addImageUrl = () => {
     const url = (document.getElementById('img-url-input')?.value || '').trim();
-    if (!url) return;
+    if (!url) { toast.warning('URL vac\u00EDa', 'Pega una URL de imagen'); return; }
+    if (!/^(https?:\/\/)[^\s]+\.(jpg|jpeg|png|webp|gif)(\?.*)?$/i.test(url)) { toast.error('URL inv\u00E1lida', 'Debe ser una imagen (jpg, png, webp...). Este formato requiere conexi\u00F3n'); return; }
     setForm(prev => ({ ...prev, images: [...(prev.images || []), url], image: prev.images.length === 0 ? url : prev.image }));
     if (document.getElementById('img-url-input')) document.getElementById('img-url-input').value = '';
   };
@@ -64,7 +67,8 @@ export default function AdminInventory() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name || !form.brand || !form.price) { alert('Nombre, marca y precio obligatorios'); return; }
+    if (!form.name || !form.brand || !form.price) { toast.warning('Faltan datos', 'Nombre, marca y precio son obligatorios'); return; }
+    if (isNaN(parseFloat(form.price)) || parseFloat(form.price) <= 0) { toast.warning('Precio inv\u00E1lido', 'El precio debe ser mayor a 0'); return; }
     setSaving(true);
     try {
       const rawImgs = Array.isArray(form.images) ? form.images.filter(Boolean) : [];
@@ -86,7 +90,8 @@ export default function AdminInventory() {
       setModalOpen(false);
       loadProducts();
     } catch (err) {
-      alert('Error al guardar: ' + (err && err.message ? err.message : 'verifica las imagenes'));
+      console.error('Error al guardar producto', err);
+      toast.error('Error', 'No se pudo guardar el producto. Verifica las im\u00E1genes');
     }
     setSaving(false);
   };
@@ -107,12 +112,17 @@ export default function AdminInventory() {
     if (confirm(`Eliminar "${name}"?`)) { await deleteDocument('products', id); loadProducts(); }
   };
 
+  const closeModal = () => {
+    if (modalOpen && Object.values(form).some(v => Array.isArray(v) ? v.length > 0 : String(v).trim() !== '') && !confirm('\u00BFDescartar los cambios sin guardar?')) return;
+    setModalOpen(false);
+  };
+
   return (
     <>
       <h3 className="section-title mb-15">Inventario de Perfumes</h3>
 
       {products.length === 0 ? (
-        <div className="empty-state"><div className="empty-icon">{'\uD83E\uDDF4'}</div><div className="empty-text">No hay productos</div></div>
+        <EmptyState icon="🧴" title="No hay productos" subtext="Agrega tu primer perfume al inventario" />
       ) : products.map(p => {
         const isLowStock = p.minStock && p.stock <= p.minStock;
         return (
@@ -133,9 +143,9 @@ export default function AdminInventory() {
               <div style={{display:'flex',alignItems:'center',gap:10}}>
                 <span style={{fontSize:13,color:'var(--gray-500)',fontWeight:600}}>Stock</span>
                 <div className="catalog-qty">
-                  <button onClick={() => updateStock(p.id, p.stock, 'subtract')}>-</button>
+                  <button onClick={() => updateStock(p.id, p.stock, 'subtract')} aria-label={`Disminuir stock de ${p.name}`}>-</button>
                   <span>{p.stock}</span>
-                  <button onClick={() => updateStock(p.id, p.stock, 'add')}>+</button>
+                  <button onClick={() => updateStock(p.id, p.stock, 'add')} aria-label={`Aumentar stock de ${p.name}`}>+</button>
                 </div>
                 {isLowStock && <span style={{fontSize:11,color:'var(--danger)',fontWeight:500}}>Min: {p.minStock}</span>}
               </div>
@@ -151,10 +161,10 @@ export default function AdminInventory() {
         );
       })}
 
-      <button className="fab" onClick={openAdd}>+</button>
+      <button className="fab" onClick={openAdd} aria-label="Agregar producto">+</button>
 
       {modalOpen && (
-        <div className="modal-overlay" onClick={() => setModalOpen(false)}>
+        <div className="modal-overlay" onClick={closeModal}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <h2 className="modal-title">{editingId ? 'Editar Perfume' : 'Nuevo Perfume'}</h2>
             <form onSubmit={handleSubmit}>
@@ -185,7 +195,7 @@ export default function AdminInventory() {
                     {(form.images || []).map((img, idx) => (
                       <div key={idx} style={{position:'relative',width:64,height:64}}>
                         <img src={img} alt={`foto ${idx + 1}`} style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:8,border:'1px solid var(--gray-200)'}} />
-                        <button type="button" onClick={() => removeImage(idx)} style={{position:'absolute',top:-6,right:-6,width:20,height:20,borderRadius:'50%',background:'var(--danger)',color:'#fff',border:'none',fontSize:11,lineHeight:1,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>{'\u2715'}</button>
+                        <button type="button" onClick={() => removeImage(idx)} aria-label={`Eliminar foto ${idx + 1}`} style={{position:'absolute',top:-6,right:-6,width:20,height:20,borderRadius:'50%',background:'var(--danger)',color:'#fff',border:'none',fontSize:11,lineHeight:1,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>{'\u2715'}</button>
                       </div>
                     ))}
                   </div>
@@ -197,7 +207,7 @@ export default function AdminInventory() {
               </div>
               <div className="form-group"><textarea className="form-input" placeholder="Descripcion" value={form.description} onChange={e => setForm({...form, description: e.target.value})} style={{minHeight:80}} /></div>
               <div className="modal-actions">
-                <button type="button" className="btn btn-outline" onClick={() => setModalOpen(false)}>Cancelar</button>
+                <button type="button" className="btn btn-outline" onClick={closeModal}>Cancelar</button>
                 <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Guardando...' : (editingId ? 'Actualizar' : 'Guardar')}</button>
               </div>
             </form>

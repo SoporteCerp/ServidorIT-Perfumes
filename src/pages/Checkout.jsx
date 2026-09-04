@@ -5,6 +5,7 @@ import { addDocument, getDocuments, updateDocument } from '../services/firestore
 import { auth } from '../services/firebase';
 import { getCoupons, getBestCoupon } from '../services/couponService';
 import { compressImage } from '../services/imageUtils';
+import { toast } from '../components/Toast';
 
 const YAPPY_NUMBER = '62686706';
 const WHATSAPP_NUMBER = '50767238540';
@@ -133,12 +134,14 @@ export default function Checkout() {
       setScreenshot(compressed);
       setScreenshotPreview(compressed);
     } else {
-      alert('No se pudo procesar la imagen');
+      toast.error('Imagen', 'No se pudo procesar la imagen');
     }
   };
 
   const handleOrder = async () => {
-    if (!name || !phone || !address) { alert('Completa todos los campos'); return; }
+    if (!name || !phone || !address) { toast.error('Completa todos los campos'); return; }
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast.error('Email inv\u00E1lido', 'Revisa el correo para recibir tu factura'); return; }
+    if (!/^[0-9+\-\s()]{7,16}$/.test(phone)) { toast.error('Tel\u00E9fono inv\u00E1lido', 'Ingresa un tel\u00E9fono v\u00E1lido con 7 a 16 d\u00EDgitos'); return; }
     setLoading(true);
     try {
       const orderData = {
@@ -169,13 +172,13 @@ export default function Checkout() {
       clearCart();
 
       setStep('yappy');
-    } catch (e) { alert('Error al crear pedido'); }
+    } catch (e) { console.error('Error al crear pedido', e); toast.error('Error', 'No se pudo crear el pedido. Intenta de nuevo.'); }
     finally { setLoading(false); }
   };
 
   const handleConfirmPayment = async () => {
-    if (!screenshot) { alert('Sube el comprobante de pago'); return; }
-    if (!reference.trim()) { alert('Escribe el numero de referencia'); return; }
+    if (!screenshot) { toast.error('Falta el comprobante', 'Sube el comprobante de pago'); return; }
+    if (!reference.trim()) { toast.error('Falta la referencia', 'Escribe el n\u00FAmero de referencia'); return; }
     setUploading(true);
     try {
       await updateDocument('orders', orderId, {
@@ -184,7 +187,7 @@ export default function Checkout() {
         status: 'pendiente_confirmacion'
       });
       setStep('done');
-    } catch (e) { console.error('ERROR COMPROBANTE:', e); alert('Error al subir comprobante: ' + (e?.message || e)); }
+    } catch (e) { console.error('ERROR COMPROBANTE:', e); toast.error('Error', 'No se pudo subir el comprobante. Intenta de nuevo.'); }
     finally { setUploading(false); }
   };
 

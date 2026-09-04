@@ -1,6 +1,7 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { getDocuments, updateDocument, deleteDocument } from '../services/firestoreService';
 import { sendInvoice } from '../services/emailService';
+import { toast } from '../components/Toast';
 
 const statusLabel = {
   pagado: 'Pago aprobado',
@@ -21,32 +22,38 @@ export default function Dashboard() {
   useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
-    const data = await getDocuments('orders', [], 'createdAt', 'desc');
+    // Only fetch the last 100 orders for display
+    const data = await getDocuments('orders', [], 'createdAt', 'desc', 100);
     setOrders(data);
-    const paid = data.filter(o => o.paymentStatus === 'pagado');
-    const cost = paid.reduce((s, o) => s + (o.items?.reduce((si, i) => si + ((i.cost ?? i.price) * i.quantity), 0) || 0), 0);
-    const revenue = paid.reduce((s, o) => s + (o.total || 0), 0);
-
-    const delivered = data.filter(o => o.status === 'entregado' && o.createdAt?.toDate && o.deliveredAt?.toDate);
-    let avgDeliveryDays = 0;
-    if (delivered.length > 0) {
-      const totalDays = delivered.reduce((s, o) => {
-        const created = new Date(o.createdAt.toDate());
-        const deliveredDate = new Date(o.deliveredAt.toDate());
-        const diff = Math.max(0, Math.round((deliveredDate - created) / (1000 * 60 * 60 * 24)));
-        return s + diff;
-      }, 0);
-      avgDeliveryDays = Math.round((totalDays / delivered.length) * 10) / 10;
-    }
-
-    setStats({
-      total: data.length,
-      revenue,
-      cost,
-      profit: revenue - cost,
-      pending: data.filter(o => o.status === 'pendiente_confirmacion').length,
-      delivered: data.filter(o => o.status === 'entregado').length,
-      avgDeliveryDays
+    
+    // Use server-side aggregations for accurate global stats
+    import('../services/firestoreService').then(async ({ getOrderStats }) => {
+      const serverStats = await getOrderStats();
+      
+      const paid = data.filter(o => o.paymentStatus === 'pagado');
+      const cost = paid.reduce((s, o) => s + (o.items?.reduce((si, i) => si + ((i.cost ?? i.price) * i.quantity), 0) || 0), 0);
+      
+      const delivered = data.filter(o => o.status === 'entregado' && o.createdAt?.toDate && o.deliveredAt?.toDate);
+      let avgDeliveryDays = 0;
+      if (delivered.length > 0) {
+        const totalDays = delivered.reduce((s, o) => {
+          const created = new Date(o.createdAt.toDate());
+          const deliveredDate = new Date(o.deliveredAt.toDate());
+          const diff = Math.max(0, Math.round((deliveredDate - created) / (1000 * 60 * 60 * 24)));
+          return s + diff;
+        }, 0);
+        avgDeliveryDays = Math.round((totalDays / delivered.length) * 10) / 10;
+      }
+  
+      setStats({
+        total: serverStats.total,
+        revenue: serverStats.revenue,
+        cost,
+        profit: serverStats.revenue - cost,
+        pending: serverStats.pending,
+        delivered: serverStats.delivered,
+        avgDeliveryDays
+      });
     });
   };
 
@@ -71,7 +78,7 @@ export default function Dashboard() {
       }
 
       loadData();
-    } catch (e) { alert('Error al confirmar pago'); }
+    } catch (e) { console.error(e); toast.error('Error', 'No se pudo confirmar el pago'); }
     finally { setLoadingAction(null); }
   };
 
@@ -84,7 +91,7 @@ export default function Dashboard() {
         status: 'rechazado'
       });
       loadData();
-    } catch (e) { alert('Error al rechazar'); }
+    } catch (e) { console.error(e); toast.error('Error', 'No se pudo rechazar el pago'); }
     finally { setLoadingAction(null); }
   };
 
@@ -93,7 +100,7 @@ export default function Dashboard() {
     try {
       await updateDocument('orders', order.id, { status: 'entregado', deliveredAt: new Date() });
       loadData();
-    } catch (e) { alert('Error'); }
+    } catch (e) { console.error(e); toast.error('Error', 'No se pudo completar la accion'); }
     finally { setLoadingAction(null); }
   };
 
@@ -102,7 +109,7 @@ export default function Dashboard() {
     try {
       await updateDocument('orders', order.id, { status: 'procesando', paymentStatus: 'pagado' });
       loadData();
-    } catch (e) { alert('Error'); }
+    } catch (e) { console.error(e); toast.error('Error', 'No se pudo completar la accion'); }
     finally { setLoadingAction(null); }
   };
 
@@ -111,7 +118,7 @@ export default function Dashboard() {
     try {
       await updateDocument('orders', order.id, { status: 'en_transito' });
       loadData();
-    } catch (e) { alert('Error'); }
+    } catch (e) { console.error(e); toast.error('Error', 'No se pudo completar la accion'); }
     finally { setLoadingAction(null); }
   };
 
@@ -121,7 +128,7 @@ export default function Dashboard() {
     try {
       await deleteDocument('orders', order.id);
       loadData();
-    } catch (e) { alert('Error al eliminar'); }
+    } catch (e) { console.error(e); toast.error('Error', 'No se pudo eliminar el pedido'); }
     finally { setLoadingAction(null); }
   };
 

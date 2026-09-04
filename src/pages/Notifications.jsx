@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, query, where, orderBy, onSnapshot, updateDoc, doc } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../services/firebase';
 import { getUserRole } from '../services/authService';
+import EmptyState from '../components/EmptyState';
 
 export default function Notifications() {
   const navigate = useNavigate();
@@ -17,55 +18,63 @@ export default function Notifications() {
     const r = await getUserRole(auth.currentUser.uid);
     setRole(r);
 
-    const unsubOrders = onSnapshot(
-      query(collection(db, 'orders'), orderBy('createdAt', 'desc')),
-      (snapshot) => {
-        const notifs = [];
-        snapshot.forEach(docSnap => {
-          const order = docSnap.data();
-          if (order.status === 'pendiente_confirmacion' && order.screenshot && r === 'admin') {
-            notifs.push({
-              id: docSnap.id,
-              type: 'order',
-              title: 'Nuevo Pedido',
-              message: `${order.customerName} - $${order.total}`,
-              date: order.createdAt,
-              read: false
-            });
-          }
-          if (order.paymentStatus === 'pendiente' && order.screenshot && r === 'admin') {
-            notifs.push({
-              id: docSnap.id + '_pay',
-              type: 'payment',
-              title: 'Pago Pendiente',
-              message: `${order.customerName} envio comprobante de $${order.total}`,
-              date: order.createdAt,
-              read: false
-            });
-          }
-        });
-        setNotifications(notifs);
-      }
-    );
+    let unsubOrders = () => {};
+    if (r === 'admin') {
+      unsubOrders = onSnapshot(
+        query(collection(db, 'orders'), orderBy('createdAt', 'desc')),
+        (snapshot) => {
+          const notifs = [];
+          snapshot.forEach(docSnap => {
+            const order = docSnap.data();
+            if (order.status === 'pendiente_confirmacion' && order.screenshot) {
+              notifs.push({
+                id: docSnap.id,
+                type: 'order',
+                title: 'Nuevo Pedido',
+                message: `${order.customerName} - $${order.total}`,
+                date: order.createdAt,
+                read: false
+              });
+            }
+            if (order.paymentStatus === 'pendiente' && order.screenshot) {
+              notifs.push({
+                id: docSnap.id + '_pay',
+                type: 'payment',
+                title: 'Pago Pendiente',
+                message: `${order.customerName} envio comprobante de $${order.total}`,
+                date: order.createdAt,
+                read: false
+              });
+            }
+          });
+          setNotifications(notifs);
+        }
+      );
+    }
 
-    const unsubChat = onSnapshot(
-      query(collection(db, 'chats'), where('userId', '==', auth.currentUser.uid)),
-      (snapshot) => {
-        snapshot.forEach(docSnap => {
-          const chat = docSnap.data();
-          if (chat.lastMessage && !chat.lastMessage.startsWith('Admin')) {
+    let unsubChat = () => {};
+    const chatQuery = r === 'admin'
+      ? query(collection(db, 'chats'), orderBy('lastMessageAt', 'desc'))
+      : query(collection(db, 'chats'), where('userId', '==', auth.currentUser.uid));
+    unsubChat = onSnapshot(chatQuery, (snapshot) => {
+      snapshot.forEach(docSnap => {
+        const chat = docSnap.data();
+        if (chat.lastMessage) {
+          const isAdminReply = chat.lastMessage.startsWith('Admin');
+          const shouldNotify = r === 'admin' ? !isAdminReply : isAdminReply;
+          if (shouldNotify) {
             setNotifications(prev => [...prev, {
-              id: docSnap.id + '_chat',
+              id: docSnap.id + '_chat_' + (chat.lastMessageAt?.seconds || Date.now()),
               type: 'chat',
-              title: 'Nuevo Mensaje',
+              title: r === 'admin' ? 'Nuevo Mensaje' : 'Respuesta del Admin',
               message: chat.lastMessage,
               date: chat.lastMessageAt,
               read: false
             }]);
           }
-        });
-      }
-    );
+        }
+      });
+    });
 
     return () => { unsubOrders(); unsubChat(); };
   };
@@ -92,10 +101,7 @@ export default function Notifications() {
       <h3 className="section-title mb-15">Notificaciones</h3>
 
       {notifications.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-icon">🔔</div>
-          <div className="empty-text">No hay notificaciones</div>
-        </div>
+        <EmptyState icon="🔔" title="No hay notificaciones" />
       ) : (
         notifications.map(notif => (
           <div
