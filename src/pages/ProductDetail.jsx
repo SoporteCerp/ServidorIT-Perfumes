@@ -5,6 +5,7 @@ import { addToCart, getCartCount } from '../services/cartService';
 import { toggleWishlist, isInWishlist } from '../services/wishlistService';
 import { getPriceHistory } from '../services/priceHistoryService';
 import ImageViewer from '../components/ImageViewer';
+import { isProductNew, isProductOffer, productDiscount, isLowStock } from '../utils/productHelpers';
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -122,6 +123,11 @@ export default function ProductDetail() {
             📤
           </button>
         </div>
+        <div className="product-badges" style={{top:15,left:15,right:'auto'}}>
+          {isProductOffer(product) && <span className="prod-badge badge-offer">OFERTA -{productDiscount(product)}%</span>}
+          {isProductNew(product) && <span className="prod-badge badge-new">NUEVO</span>}
+          {product.category === 'importados' && <span className="prod-badge badge-imported">IMPORTADO</span>}
+        </div>
       </div>
       {(() => {
         const images = (Array.isArray(product.images) && product.images.filter(Boolean).length > 0)
@@ -148,7 +154,13 @@ export default function ProductDetail() {
       <div className="detail-info">
         <div className="detail-brand">{product.brand}</div>
         <div className="detail-name">{product.name}</div>
-        <div className="detail-price">${product.price}</div>
+        <div className="detail-price">
+          {isProductOffer(product) && <span className="detail-price-old">${product.originalPrice}</span>}
+          <span className={isProductOffer(product) ? 'price-offer' : ''}>${product.price}</span>
+          {isLowStock(product) && product.stock > 0 && (
+            <span className="stock-low-chip" style={{marginLeft:10,verticalAlign:'middle'}}>¡Quedan solo {product.stock}!</span>
+          )}
+        </div>
         
         <div className="detail-desc">
           {descLines.length > 0 ? descLines.map((line, i) => (

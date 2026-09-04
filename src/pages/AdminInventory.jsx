@@ -5,7 +5,7 @@ import { uploadProductImage } from '../services/storageService';
 import { toast } from '../components/Toast';
 import EmptyState from '../components/EmptyState';
 
-const defaultForm = { name: '', brand: '', price: '', cost: '', stock: '', minStock: '', category: 'unisex', description: '', image: '', images: [] };
+const defaultForm = { name: '', brand: '', price: '', originalPrice: '', cost: '', stock: '', minStock: '', category: 'unisex', description: '', image: '', images: [] };
 
 export default function AdminInventory() {
   const [products, setProducts] = useState([]);
@@ -27,7 +27,7 @@ export default function AdminInventory() {
   const openEdit = (p) => {
     const imgs = Array.isArray(p.images) && p.images.length > 0 ? p.images : (p.image ? [p.image] : []);
     setEditingId(p.id);
-    setForm({ name: p.name, brand: p.brand, price: p.price, cost: p.cost ?? '', stock: p.stock, minStock: p.minStock ?? '', category: p.category, description: p.description || '', image: imgs[0] || '', images: imgs });
+    setForm({ name: p.name, brand: p.brand, price: p.price, originalPrice: p.originalPrice ?? '', cost: p.cost ?? '', stock: p.stock, minStock: p.minStock ?? '', category: p.category, description: p.description || '', image: imgs[0] || '', images: imgs });
     setImagePreview(imgs[0] || null);
     setModalOpen(true);
   };
@@ -76,7 +76,7 @@ export default function AdminInventory() {
       for (let i = 0; i < rawImgs.length; i++) {
         uploaded.push(await uploadProductImage(rawImgs[i], i));
       }
-      const data = { ...form, images: uploaded, image: uploaded[0] || '', price: parseFloat(form.price), cost: form.cost ? parseFloat(form.cost) : parseFloat(form.price), stock: parseInt(form.stock) || 0, minStock: parseInt(form.minStock) || 0 };
+      const data = { ...form, images: uploaded, image: uploaded[0] || '', price: parseFloat(form.price), originalPrice: form.originalPrice ? parseFloat(form.originalPrice) : null, cost: form.cost ? parseFloat(form.cost) : parseFloat(form.price), stock: parseInt(form.stock) || 0, minStock: parseInt(form.minStock) || 0 };
       if (editingId) {
         const oldProduct = products.find(p => p.id === editingId);
         if (oldProduct && oldProduct.price !== data.price) {
@@ -134,7 +134,12 @@ export default function AdminInventory() {
               <div style={{flex:1}}>
                 <div className="admin-name">{p.name}</div>
                 <div className="admin-brand">{p.brand} {'\u00B7'} {p.category}</div>
-                <div className="admin-price">${p.price}</div>
+                <div className="admin-price">
+                  {p.originalPrice && parseFloat(p.originalPrice) > parseFloat(p.price) && (
+                    <span style={{textDecoration:'line-through',color:'var(--gray-400)',fontSize:12,fontWeight:400,marginRight:6}}>${p.originalPrice}</span>
+                  )}
+                  ${p.price} {p.originalPrice && parseFloat(p.originalPrice) > parseFloat(p.price) && <span className="prod-badge badge-offer" style={{marginLeft:6}}>-{Math.round(((parseFloat(p.originalPrice) - parseFloat(p.price)) / parseFloat(p.originalPrice)) * 100)}%</span>}
+                </div>
                 <div style={{fontSize:12,color:'var(--gray-400)'}}>Costo: ${p.cost ?? p.price}</div>
               </div>
               {isLowStock && <span style={{fontSize:18,color:'var(--danger)',fontWeight:700}} title={'Stock bajo! Minimo: ' + (p.minStock || 0)}>{'\u26A0\uFE0F'}</span>}
@@ -171,6 +176,7 @@ export default function AdminInventory() {
               <div className="form-group"><input className="form-input" placeholder="Nombre *" value={form.name} onChange={e => setForm({...form, name: e.target.value})} /></div>
               <div className="form-group"><input className="form-input" placeholder="Marca *" value={form.brand} onChange={e => setForm({...form, brand: e.target.value})} /></div>
               <div className="form-group"><input className="form-input" placeholder="Precio de venta *" type="number" value={form.price} onChange={e => setForm({...form, price: e.target.value})} /></div>
+              <div className="form-group"><input className="form-input" placeholder="Precio anterior (para oferta, en tachado)" type="number" value={form.originalPrice} onChange={e => setForm({...form, originalPrice: e.target.value})} /></div>
               <div className="form-group"><input className="form-input" placeholder="Costo (precio de compra)" type="number" value={form.cost} onChange={e => setForm({...form, cost: e.target.value})} /></div>
               <div style={{display:'flex',gap:10}}>
                 <div className="form-group" style={{flex:1}}><input className="form-input" placeholder="Stock" type="number" value={form.stock} onChange={e => setForm({...form, stock: e.target.value})} /></div>

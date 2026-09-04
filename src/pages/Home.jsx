@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getDocuments } from '../services/firestoreService';
+import { isProductNew, isProductOffer, productDiscount, isLowStock, getProductImages } from '../utils/productHelpers';
 
 function ProductCard({ product, navigate }) {
-  const imgs = (Array.isArray(product.images) && product.images.filter(Boolean).length > 0)
-    ? product.images
-    : (product.image ? [product.image] : []);
+  const imgs = getProductImages(product);
+  const discount = productDiscount(product);
   return (
     <div
       className="product-card"
@@ -14,11 +14,19 @@ function ProductCard({ product, navigate }) {
     >
       <div className="product-image" style={{aspectRatio:'1 / 1'}}>
         {imgs[0] ? <img src={imgs[0]} alt={product.name} style={{width:'100%',height:'100%',objectFit:'cover'}} /> : '🧴'}
+        <div className="product-badges">
+          {discount > 0 && <span className="prod-badge badge-offer">-{discount}%</span>}
+          {isProductNew(product) && <span className="prod-badge badge-new">NUEVO</span>}
+        </div>
       </div>
       <div className="product-info">
         <div className="product-brand">{product.brand}</div>
         <div className="product-name">{product.name}</div>
-        <div className="product-price">${product.price}</div>
+        <div className="product-price-line">
+          {discount > 0 && <span className="price-old">${product.originalPrice}</span>}
+          <span className={`product-price ${discount > 0 ? 'price-offer' : ''}`}>${product.price}</span>
+          {isLowStock(product) && <span className="stock-low-chip">Quedan pocos</span>}
+        </div>
       </div>
     </div>
   );
@@ -70,7 +78,8 @@ export default function Home() {
     setProducts(data.filter(p => p.active === true));
   };
 
-  const ofertas = products.filter(p => p.category === 'Ofertas' || p.category === 'ofertas');
+  const ofertas = products.filter(p => p.category === 'Ofertas' || p.category === 'ofertas' || isProductOffer(p));
+  const nuevos = products.filter(p => isProductNew(p)).slice(0, 10);
 
   const brandSections = [];
   const brands = Array.from(new Set(products.map(p => p.brand).filter(Boolean)));
@@ -109,6 +118,13 @@ export default function Home() {
         <div style={{margin:'20px 10px'}}>
           <h3 style={{fontSize:20,fontWeight:700,marginBottom:12,paddingLeft:4}}>{'\uD83D\uDD25'} Ofertas</h3>
           <AutoCarousel items={ofertas} navigate={navigate} />
+        </div>
+      )}
+
+      {nuevos.length > 0 && (
+        <div style={{margin:'20px 10px'}}>
+          <h3 style={{fontSize:20,fontWeight:700,marginBottom:12,paddingLeft:4}}>{'\u2728'} Nuevos lanzamientos</h3>
+          <AutoCarousel items={nuevos} navigate={navigate} />
         </div>
       )}
 

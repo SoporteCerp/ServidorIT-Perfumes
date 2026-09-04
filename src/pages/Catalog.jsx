@@ -5,6 +5,7 @@ import { useCart } from '../context/CartContext';
 import { getDocuments } from '../services/firestoreService';
 import ImageViewer from '../components/ImageViewer';
 import EmptyState from '../components/EmptyState';
+import { isProductNew, isProductOffer, productDiscount, isLowStock, getProductImages } from '../utils/productHelpers';
 
 export default function Catalog() {
   const navigate = useNavigate();
@@ -71,7 +72,11 @@ export default function Catalog() {
   const filtered = useMemo(() => {
     const result = products.filter(p => {
       const matchSearch = p.name?.toLowerCase().includes(search.toLowerCase()) || p.brand?.toLowerCase().includes(search.toLowerCase());
-      const matchFilter = filter === 'todos' || p.category === filter;
+      const matchFilter = filter === 'todos'
+        || (filter === 'nuevos' ? isProductNew(p)
+          : filter === 'ofertas' ? isProductOffer(p)
+            : filter === 'importados' ? p.category === 'importados'
+              : p.category === filter);
       const matchBrand = !brandFilter || p.brand === brandFilter;
       const price = parseFloat(p.price) || 0;
       const matchMin = minPrice === '' || price >= parseFloat(minPrice);
@@ -120,15 +125,24 @@ export default function Catalog() {
             <div key={p.id} className="product-card" onClick={() => navigate(`/product/${p.id}`)}>
               <div className="product-image" onClick={(e) => { e.stopPropagation(); openViewer(p); }} style={{cursor:'zoom-in'}}>
                 {(() => {
-                  const imgs = (Array.isArray(p.images) && p.images.filter(Boolean).length > 0) ? p.images : [p.image];
+                  const imgs = getProductImages(p);
                   return imgs[0] ? <img src={imgs[0]} alt={p.name} style={{width:'100%',height:'100%',objectFit:'cover'}} /> : '🧴';
                 })()}
+                <div className="product-badges">
+                  {isProductOffer(p) && <span className="prod-badge badge-offer">-{productDiscount(p)}%</span>}
+                  {isProductNew(p) && <span className="prod-badge badge-new">NUEVO</span>}
+                  {p.category === 'importados' && <span className="prod-badge badge-imported">IMPORTADO</span>}
+                </div>
               </div>
               <div className="product-info">
                 <div className="product-brand">{p.brand}</div>
                 <div className="product-name">{p.name}</div>
                 {p.description && <div className="product-desc">{firstLine(p.description)}</div>}
-                <div className="product-price">${p.price}</div>
+                <div className="product-price-line">
+                  {isProductOffer(p) && <span className="price-old">${p.originalPrice}</span>}
+                  <span className={`product-price ${isProductOffer(p) ? 'price-offer' : ''}`}>${p.price}</span>
+                  {isLowStock(p) && <span className="stock-low-chip">Quedan pocos</span>}
+                </div>
                 {(
                   <div style={{display:'flex',alignItems:'center',gap:8,marginTop:10}} onClick={e => e.stopPropagation()}>
                     <div className="catalog-qty">

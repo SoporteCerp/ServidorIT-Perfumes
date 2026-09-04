@@ -39,12 +39,31 @@ export default function Reviews({ productId }) {
   };
 
   const avg = reviews.length > 0 ? (reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length).toFixed(1) : 0;
+  const dist = [5, 4, 3, 2, 1].map(stars => ({
+    stars,
+    count: reviews.filter(r => (r.rating || 0) === stars).length
+  }));
+  const maxDist = Math.max(...dist.map(d => d.count), 1);
 
   return (
     <div className="reviews-section">
-      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:16}}>
-        <span style={{fontSize:18,fontWeight:700}}>Resenas</span>
-        <span style={{fontSize:14,color:'var(--gray-400)'}}>{'\u2605'} {avg} ({reviews.length})</span>
+      <div className="reviews-summary">
+        <div className="reviews-score">
+          <div className="reviews-avg">{avg}</div>
+          <div className="reviews-stars">{'\u2605'.repeat(Math.round(avg) || 0)}{'\u2606'.repeat(5 - Math.round(avg))}</div>
+          <div className="reviews-count">{reviews.length} resena{reviews.length !== 1 ? 's' : ''}</div>
+        </div>
+        <div className="reviews-dist">
+          {dist.map(d => (
+            <div key={d.stars} className="reviews-dist-row">
+              <span className="reviews-dist-label">{d.stars} {'\u2605'}</span>
+              <div className="reviews-dist-track">
+                <div className="reviews-dist-fill" style={{width: `${Math.round((d.count / maxDist) * 100)}%`}} />
+              </div>
+              <span className="reviews-dist-count">{d.count}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {user && (

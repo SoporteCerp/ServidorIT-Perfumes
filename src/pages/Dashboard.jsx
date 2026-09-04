@@ -180,6 +180,38 @@ export default function Dashboard() {
   const pendingOrders = orders.filter(o => o.status === 'pendiente_confirmacion');
   const paidOrders = orders.filter(o => o.status === 'pagado' || o.status === 'en_transito' || o.status === 'procesando');
 
+  const last7 = [];
+  const today = new Date();
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    last7.push({ key: d.toDateString(), label: d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }), total: 0 });
+  }
+  (orders || []).forEach(o => {
+    if (o.paymentStatus === 'pagado' && o.createdAt && o.createdAt.toDate) {
+      const slot = last7.find(s => s.key === new Date(o.createdAt.toDate()).toDateString());
+      if (slot) slot.total += (o.total || 0);
+    }
+  });
+  const maxDay = Math.max(...last7.map(s => s.total), 1);
+
+  const productTotals = {};
+  (orders || []).forEach(o => {
+    (o.items || []).forEach(it => {
+      const name = it.name || 'Producto';
+      if (!productTotals[name]) productTotals[name] = { qty: 0, revenue: 0 };
+      productTotals[name].qty += it.quantity || 0;
+      productTotals[name].revenue += (it.price || 0) * (it.quantity || 0);
+    });
+  });
+  const topProducts = Object.entries(productTotals)
+    .map(([name, v]) => ({ name, ...v }))
+    .sort((a, b) => b.qty - a.qty)
+    .slice(0, 5);
+  const maxTopQty = Math.max(...topProducts.map(t => t.qty), 1);
+
+  const formatMoney = (n) => '$' + (n ? n.toLocaleString('es-PA', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }) : 0);
+
   return (
     <>
       <h3 className="section-title mb-15">Dashboard de Ventas</h3>
@@ -232,6 +264,44 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      <div className="chart-row">
+        <div className="chart-card">
+          <div className="chart-title">📈 Ventas últimos 7 días</div>
+          <div className="sales-bars">
+            {last7.map(s => (
+              <div key={s.key} className="sales-bar-col">
+                <span className="sales-bar-value">{s.total > 0 ? formatMoney(s.total) : ''}</span>
+                <div className="sales-bar-track">
+                  <div className="sales-bar" style={{height: `${Math.max(4, Math.round((s.total / maxDay) * 100))}%`}} />
+                </div>
+                <span className="sales-bar-label">{s.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="chart-card">
+          <div className="chart-title">🔥 Top productos vendidos</div>
+          {topProducts.length === 0 ? (
+            <div style={{fontSize:13,color:'var(--gray-400)',textAlign:'center',padding:20}}>Aun no hay ventas para mostrar</div>
+          ) : (
+            <div className="top-products">
+              {topProducts.map(t => (
+                <div key={t.name} className="top-product-row">
+                  <div className="top-product-head">
+                    <span className="top-product-name" title={t.name}>{t.name}</span>
+                    <span className="top-product-qty">{t.qty} unid. · {formatMoney(t.revenue)}</span>
+                  </div>
+                  <div className="top-bar-track">
+                    <div className="top-bar-fill" style={{width: `${Math.max(4, Math.round((t.qty / maxTopQty) * 100))}%`}} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
       {pendingOrders.length > 0 && (
         <>
