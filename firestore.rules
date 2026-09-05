@@ -92,5 +92,11 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+
+    // Store settings (contact name, phone, whatsapp, yappy): anyone reads, only admin writes
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
   }
 }

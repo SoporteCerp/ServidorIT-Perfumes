@@ -6,6 +6,7 @@ import { getDocument, updateDocument, setDocument } from '../services/firestoreS
 import { uploadProfilePhoto } from '../services/storageService';
 import { setLanguage, getLanguage, t } from '../services/i18n';
 import { toast } from '../components/Toast';
+import { updateProfile } from 'firebase/auth';
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -18,7 +19,7 @@ export default function Profile() {
   const [userId, setUserId] = useState(null);
   const [role, setRole] = useState('customer');
   const [saved, setSaved] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [lang, setLang] = useState(getLanguage());
   const [darkMode, setDarkMode] = useState(localStorage.getItem('esencia_dark') === 'true');
@@ -47,15 +48,21 @@ export default function Profile() {
 
   const handleSave = async () => {
     if (!name) { toast.warning('Nombre requerido'); return; }
-    setLoading(true);
+    setSaving(true);
     try {
       if (userId) {
         await updateDocument('users', userId, { name, phone, address });
+      } else {
+        await setDocument('users', user.uid, { uid: user.uid, email: user.email || '', name, phone, address, role: role || 'customer' });
+        setUserId(user.uid);
       }
+      try {
+        if (user.displayName !== name) await updateProfile(user, { displayName: name });
+      } catch (e) { console.warn('No se pudo actualizar el nombre de sesion', e); }
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (e) { console.error('Error al guardar perfil', e); toast.error('Error', 'No se pudo guardar el perfil'); }
-    setLoading(false);
+    setSaving(false);
   };
 
   const handlePhotoUpload = async (e) => {
@@ -125,24 +132,24 @@ export default function Profile() {
       )}
 
       <div className="form-group">
-        <label className="form-label" htmlFor="profile-name">{t('profile')} Name</label>
+        <label className="form-label" htmlFor="profile-name">{t('profile')} Nombre</label>
         <input id="profile-name" className="form-input" value={name} onChange={e => setName(e.target.value)} />
       </div>
 
       <div className="form-group">
-        <label className="form-label" htmlFor="profile-phone">Phone</label>
+        <label className="form-label" htmlFor="profile-phone">Telefono</label>
         <input id="profile-phone" className="form-input" placeholder="6000-1234" value={phone} onChange={e => setPhone(e.target.value)} />
       </div>
 
       <div className="form-group">
-        <label className="form-label" htmlFor="profile-address">Address</label>
-        <input id="profile-address" className="form-input" placeholder="Delivery address" value={address} onChange={e => setAddress(e.target.value)} />
+        <label className="form-label" htmlFor="profile-address">Direccion</label>
+        <input id="profile-address" className="form-input" placeholder="Direccion de entrega" value={address} onChange={e => setAddress(e.target.value)} />
       </div>
 
-      {saved && <p style={{color:'var(--success)',textAlign:'center',marginBottom:10}}>Saved!</p>}
+      {saved && <p style={{color:'var(--success)',textAlign:'center',marginBottom:10}}>{'\u2705 Guardado'}</p>}
 
-      <button className="btn btn-primary" onClick={handleSave} disabled={loading} style={{width:'100%'}}>
-        {loading ? 'Saving...' : 'Save Changes'}
+      <button className="btn btn-primary" onClick={handleSave} disabled={saving} style={{width:'100%'}}>
+        {saving ? 'Guardando...' : 'Guardar cambios'}
       </button>
 
       <div className="card" style={{marginTop:15}}>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getDocuments } from '../services/firestoreService';
+import { getStoreSettings, DEFAULT_STORE } from '../services/storeSettingsService';
 import { isProductNew, isProductOffer, productDiscount, isLowStock, getProductImages } from '../utils/productHelpers';
 
 function ProductCard({ product, navigate }) {
@@ -70,8 +71,12 @@ function AutoCarousel({ items, navigate }) {
 export default function Home() {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
+  const [store, setStore] = useState(DEFAULT_STORE);
 
-  useEffect(() => { loadProducts(); }, []);
+  useEffect(() => {
+    getStoreSettings().then(setStore).catch(() => setStore(DEFAULT_STORE));
+    loadProducts();
+  }, []);
 
   const loadProducts = async () => {
     const data = await getDocuments('products', [], 'createdAt', 'desc');
@@ -100,7 +105,7 @@ export default function Home() {
       <div style={{background:'linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%)',padding:'40px 20px',borderRadius:16,margin:10,textAlign:'center',position:'relative',overflow:'hidden'}}>
         <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,background:'radial-gradient(circle at 20% 50%,rgba(212,175,55,0.15),transparent 50%)'}} />
         <div style={{fontSize:50,marginBottom:10}}>✨</div>
-        <h1 style={{color:'#D4AF37',fontSize:28,fontWeight:800,margin:'0 0 8px',textShadow:'0 2px 8px rgba(0,0,0,0.3)'}}>Esencia Gale</h1>
+        <h1 style={{color:'#D4AF37',fontSize:28,fontWeight:800,margin:'0 0 8px',textShadow:'0 2px 8px rgba(0,0,0,0.3)'}}>{store.name}</h1>
         <p style={{color:'#b8a86b',fontSize:15,margin:0,lineHeight:1.5}}>Fragancias que definen tu estilo</p>
       </div>
 
@@ -136,15 +141,15 @@ export default function Home() {
       ))}
 
       <div style={{background:'#1a1a2e',color:'#d4af37',borderRadius:16,margin:'20px 10px 0',padding:'24px 16px',textAlign:'center'}}>
-        <div style={{fontSize:18,fontWeight:700,marginBottom:12}}>Esencia Gale</div>
+        <div style={{fontSize:18,fontWeight:700,marginBottom:12}}>{store.name}</div>
         <div style={{fontSize:14,color:'#b8a86b',lineHeight:2}}>
-          <div>{'\uD83D\uDCCD'} Panama</div>
-          <div>{'\uD83D\uDCAC'} Yappy: 6268-6706</div>
-          <div>{'\uD83D\uDCF1'} WhatsApp: +507 6723-8540</div>
+          <div>{'\uD83D\uDCCD'} {store.address}</div>
+          <div>{'\uD83D\uDCAC'} Yappy: {store.yappy}</div>
+          <div>{'\uD83D\uDCF1'} WhatsApp: +{store.whatsapp}</div>
           <div>{'\uD83D\uDECD\uFE0F'} Envios a Colon gratis, resto del pais por mensajeria</div>
-          <div>{'\uD83D\uDD52'} Horario: Lun a Sab 9am - 7pm</div>
+          <div>{'\uD83D\uDD52'} Horario: {store.hours}</div>
         </div>
-        <div style={{fontSize:12,color:'#8a7a3a',marginTop:14}}>© {(new Date()).getFullYear()} Esencia Gale. Todos los derechos reservados.</div>
+        <div style={{fontSize:12,color:'#8a7a3a',marginTop:14}}>© {(new Date()).getFullYear()} {store.name}. Todos los derechos reservados.</div>
       </div>
     </div>
   );

@@ -6,9 +6,8 @@ import { auth } from '../services/firebase';
 import { getCoupons, getBestCoupon } from '../services/couponService';
 import { compressImage } from '../services/imageUtils';
 import { toast } from '../components/Toast';
+import { getStoreSettings, DEFAULT_STORE } from '../services/storeSettingsService';
 
-const YAPPY_NUMBER = '62686706';
-const WHATSAPP_NUMBER = '50767238540';
 const IVA_RATE = 0.07;
 const SHIPPING_ZONES = [
   { value: 'panama', label: 'Panama / San Miguelito / Oeste', cost: 2 },
@@ -48,6 +47,11 @@ export default function Checkout() {
   const [finalTotal, setFinalTotal] = useState(0);
 
   const [paymentMethod, setPaymentMethod] = useState('yappy');
+  const [store, setStore] = useState(DEFAULT_STORE);
+
+  useEffect(() => {
+    getStoreSettings().then(setStore).catch(() => setStore(DEFAULT_STORE));
+  }, []);
 
   const [shippingZone, setShippingZone] = useState('panama');
   const [courier, setCourier] = useState('ferguson');
@@ -243,7 +247,7 @@ export default function Checkout() {
         <h2 className="section-title mb-15 text-center">Paso 2: Paga con Yappy</h2>
         <div className="yappy-box">
           <div className="yappy-title">Numero de Yappy</div>
-          <div className="yappy-number">{YAPPY_NUMBER}</div>
+          <div className="yappy-number">{store.yappy}</div>
           <div className="yappy-instruction">
             Abre tu app Yappy y envia <strong>${finalTotal.toFixed(2)}</strong> al numero de arriba.
           </div>
@@ -372,7 +376,7 @@ export default function Checkout() {
       <h3 className="section-title mb-15">Metodo de Pago</h3>
       <div className="card">
         <div className="yappy-box">
-          <div className="yappy-instruction">Paga con Yappy al numero <strong>{YAPPY_NUMBER}</strong></div>
+          <div className="yappy-instruction">Paga con Yappy al numero <strong>{store.yappy}</strong></div>
           <div className="yappy-title" style={{marginTop:8}}>{'\uD83D\uDCB0'} Yappy</div>
         </div>
       </div>
@@ -447,9 +451,9 @@ export default function Checkout() {
         }).join('\n');
         const divider = '--------------------';
         const msg = encodeURIComponent(
-          'ESENCIA GALE\nTu tienda de fragancias\nTel: ' + WHATSAPP_NUMBER + '\n' + divider + '\nFACTURA DE PEDIDO\nFecha: ' + date + '\n' + divider + '\n\n' + items + '\n\nSubtotal: $' + total.toFixed(2) + '\nEnvio (' + getShippingLabel() + '): $' + shippingCost.toFixed(2) + '\nIVA (7%): $' + iva.toFixed(2) + '\n\n' + divider + '\nTOTAL: $' + finalTotal.toFixed(2) + '\n' + divider + '\n\nDATOS DEL CLIENTE:\nNombre: ' + name + '\nTelefono: ' + phone + '\nDireccion: ' + address + '\n' + divider + '\nGracias por tu compra!\nPara coordinar entrega enviar comprobante de pago'
+          (store.name || 'ESENCIA GALE').toUpperCase() + '\n' + (store.tagline || 'Tu tienda de fragancias') + '\nTel: ' + store.whatsapp + '\n' + divider + '\nFACTURA DE PEDIDO\nFecha: ' + date + '\n' + divider + '\n\n' + items + '\n\nSubtotal: $' + total.toFixed(2) + '\nEnvio (' + getShippingLabel() + '): $' + shippingCost.toFixed(2) + '\nIVA (7%): $' + iva.toFixed(2) + '\n\n' + divider + '\nTOTAL: $' + finalTotal.toFixed(2) + '\n' + divider + '\n\nDATOS DEL CLIENTE:\nNombre: ' + name + '\nTelefono: ' + phone + '\nDireccion: ' + address + '\n' + divider + '\nGracias por tu compra!\nPara coordinar entrega enviar comprobante de pago'
         );
-        window.open('https://wa.me/' + WHATSAPP_NUMBER + '?text=' + msg, '_blank');
+        window.open('https://wa.me/' + store.whatsapp + '?text=' + msg, '_blank');
       }} style={{background:'#25D366',color:'#fff'}}>
         Enviar Pedido por WhatsApp
       </button>

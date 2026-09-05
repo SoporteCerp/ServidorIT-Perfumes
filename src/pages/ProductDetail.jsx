@@ -4,6 +4,7 @@ import { getDocuments } from '../services/firestoreService';
 import { addToCart, getCartCount } from '../services/cartService';
 import { toggleWishlist, isInWishlist } from '../services/wishlistService';
 import { getPriceHistory } from '../services/priceHistoryService';
+import { getStoreSettings, DEFAULT_STORE } from '../services/storeSettingsService';
 import ImageViewer from '../components/ImageViewer';
 import { isProductNew, isProductOffer, productDiscount, isLowStock } from '../utils/productHelpers';
 
@@ -18,6 +19,11 @@ export default function ProductDetail() {
   const [favorited, setFavorited] = useState(false);
   const [imageIndex, setImageIndex] = useState(0);
   const [viewerOpen, setViewerOpen] = useState(false);
+  const [store, setStore] = useState(DEFAULT_STORE);
+
+  useEffect(() => {
+    getStoreSettings().then(setStore).catch(() => setStore(DEFAULT_STORE));
+  }, []);
 
   useEffect(() => { loadProduct(); }, [id]);
 
@@ -198,9 +204,9 @@ export default function ProductDetail() {
               const date = new Date().toLocaleDateString('es-PA');
               const divider = '--------------------';
               const msg = encodeURIComponent(
-`*ESENCIA GALE*
-Tu tienda de fragancias
-Tel: 50767238540
+`*${(store.name || 'ESENCIA GALE').toUpperCase()}*
+${store.tagline || 'Tu tienda de fragancias'}
+Tel: ${store.whatsapp}
 ${divider}
 PEDIDO RAPIDO
 Fecha: ${date}
@@ -213,7 +219,7 @@ ${divider}
 *TOTAL: $${(product.price * qty).toFixed(2)}*
 ${divider}
 Para coordinar entrega enviar comprobante de pago`);
-              window.open(`https://wa.me/50767238540?text=${msg}`, '_blank');
+              window.open(`https://wa.me/${store.whatsapp}?text=${msg}`, '_blank');
             }} style={{background:'#25D366',color:'#fff',marginTop:8}}>
               Comprar por WhatsApp
             </button>

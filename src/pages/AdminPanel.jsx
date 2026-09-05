@@ -58,6 +58,7 @@ export default function AdminPanel() {
     { icon: '🎟️', title: 'Cupones', desc: 'Crear y administrar descuentos para clientes', path: '/coupons', count: couponCount, countLabel: `${couponCount} activos` },
     { icon: '💬', title: 'Chat con clientes', desc: 'Atencion en tiempo real', path: '/chat', count: chatCount, countLabel: `${chatCount} conversaciones` },
     { icon: '📍', title: 'Ubicaciones', desc: 'Agregar tiendas y puntos de entrega', path: '/stores', count: null, countLabel: '' },
+    { icon: '🏪', title: 'Datos de la tienda', desc: 'Nombre, WhatsApp, Yappy y direccion', path: '/store-settings', count: null, countLabel: '' },
     { icon: '👤', title: 'Mi perfil', desc: 'Datos, foto de perfil y configuracion', path: '/profile', count: null, countLabel: '' },
     { icon: '🛍️', title: 'Ver la tienda', desc: 'La tienda como la ve el cliente', path: '/', count: null, countLabel: '' }
   ];

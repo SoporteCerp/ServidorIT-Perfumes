@@ -22,6 +22,7 @@ const AdminCoupons = lazy(() => import('./pages/AdminCoupons'));
 const Chat = lazy(() => import('./pages/Chat'));
 const Reports = lazy(() => import('./pages/Reports'));
 const StoreLocations = lazy(() => import('./pages/StoreLocations'));
+const StoreSettings = lazy(() => import('./pages/StoreSettings'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const Wishlist = lazy(() => import('./pages/Wishlist'));
 
@@ -67,6 +68,7 @@ function AppRoutes() {
           <Route path="/chat" element={<Chat />} />
           <Route path="/reports" element={<AdminRoute><Reports /></AdminRoute>} />
           <Route path="/stores" element={<StoreLocations />} />
+          <Route path="/store-settings" element={<AdminRoute><StoreSettings /></AdminRoute>} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Route>
