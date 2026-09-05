@@ -28,38 +28,51 @@ export default function Dashboard() {
   }, []);
 
   const loadData = async () => {
-    // Only fetch the last 100 orders for display
-    const data = await getDocuments('orders', [], 'createdAt', 'desc', 100);
+    const data = await getDocuments('orders', [], 'createdAt', 'desc', 500);
     setOrders(data);
-    
-    // Use server-side aggregations for accurate global stats
+
+    const paid = data.filter(o => o.paymentStatus === 'pagado');
+    const revenue = paid.reduce((s, o) => s + (o.total || 0), 0);
+    const cost = paid.reduce((s, o) => s + (o.items?.reduce((si, i) => si + ((i.cost ?? i.price) * i.quantity), 0) || 0), 0);
+    const pendingCount = data.filter(o => o.status === 'pendiente_confirmacion' && o.screenshot).length;
+    const delivered = data.filter(o => o.status === 'entregado');
+
+    let avgDeliveryDays = 0;
+    const deliveredTracked = delivered.filter(o => o.createdAt?.toDate && o.deliveredAt?.toDate);
+    if (deliveredTracked.length > 0) {
+      const totalDays = deliveredTracked.reduce((s, o) => {
+        const created = new Date(o.createdAt.toDate());
+        const deliveredDate = new Date(o.deliveredAt.toDate());
+        const diff = Math.max(0, Math.round((deliveredDate - created) / (1000 * 60 * 60 * 24)));
+        return s + diff;
+      }, 0);
+      avgDeliveryDays = Math.round((totalDays / deliveredTracked.length) * 10) / 10;
+    }
+
+    setStats({
+      total: data.length,
+      revenue,
+      cost,
+      profit: revenue - cost,
+      pending: pendingCount,
+      delivered: delivered.length,
+      avgDeliveryDays
+    });
+
     import('../services/firestoreService').then(async ({ getOrderStats }) => {
-      const serverStats = await getOrderStats();
-      
-      const paid = data.filter(o => o.paymentStatus === 'pagado');
-      const cost = paid.reduce((s, o) => s + (o.items?.reduce((si, i) => si + ((i.cost ?? i.price) * i.quantity), 0) || 0), 0);
-      
-      const delivered = data.filter(o => o.status === 'entregado' && o.createdAt?.toDate && o.deliveredAt?.toDate);
-      let avgDeliveryDays = 0;
-      if (delivered.length > 0) {
-        const totalDays = delivered.reduce((s, o) => {
-          const created = new Date(o.createdAt.toDate());
-          const deliveredDate = new Date(o.deliveredAt.toDate());
-          const diff = Math.max(0, Math.round((deliveredDate - created) / (1000 * 60 * 60 * 24)));
-          return s + diff;
-        }, 0);
-        avgDeliveryDays = Math.round((totalDays / delivered.length) * 10) / 10;
+      try {
+        const serverStats = await getOrderStats();
+        setStats(prev => ({
+          ...prev,
+          total: serverStats.total,
+          revenue: serverStats.revenue,
+          pending: serverStats.pending,
+          delivered: serverStats.delivered,
+          profit: serverStats.revenue - prev.cost
+        }));
+      } catch (err) {
+        console.warn('Agregados del servidor no disponibles, usando calculo local', err);
       }
-  
-      setStats({
-        total: serverStats.total,
-        revenue: serverStats.revenue,
-        cost,
-        profit: serverStats.revenue - cost,
-        pending: serverStats.pending,
-        delivered: serverStats.delivered,
-        avgDeliveryDays
-      });
     });
   };
 
