@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getDocuments, updateDocument, deleteDocument } from '../services/firestoreService';
+import { getDocuments, getDocument, updateDocument, deleteDocument } from '../services/firestoreService';
 import { sendInvoice } from '../services/emailService';
 import { clearNotificationType } from '../services/notificationService';
 import { toast } from '../components/Toast';
@@ -118,6 +118,21 @@ export default function Dashboard() {
     setLoadingAction(order.id);
     try {
       await updateDocument('orders', order.id, { status: 'entregado', deliveredAt: new Date() });
+
+      if (!order.stockDeducted && Array.isArray(order.items) && order.items.length > 0) {
+        await Promise.all(order.items.map(async (item) => {
+          if (!item?.id) return;
+          try {
+            const product = await getDocument('products', item.id);
+            if (!product || typeof product.stock === 'undefined') return;
+            const qty = parseInt(item.quantity, 10) || 0;
+            const newStock = Math.max(0, (parseInt(product.stock, 10) || 0) - qty);
+            await updateDocument('products', item.id, { stock: newStock });
+          } catch (e) { console.warn('No se pudo descontar stock de', item.id, e); }
+        }));
+        await updateDocument('orders', order.id, { stockDeducted: true });
+      }
+
       loadData();
     } catch (e) { console.error(e); toast.error('Error', 'No se pudo completar la accion'); }
     finally { setLoadingAction(null); }
