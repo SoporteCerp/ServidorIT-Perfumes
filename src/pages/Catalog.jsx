@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { getDocuments } from '../services/firestoreService';
@@ -7,8 +7,11 @@ import ImageViewer from '../components/ImageViewer';
 import EmptyState from '../components/EmptyState';
 import { isProductNew, isProductOffer, productDiscount, isLowStock, getProductImages } from '../utils/productHelpers';
 
+const VALID_FILTERS = ['todos', 'hombre', 'mujer', 'unisex', 'ofertas', 'nuevos', 'importados'];
+
 export default function Catalog() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
@@ -38,6 +41,8 @@ export default function Catalog() {
   };
 
   useEffect(() => {
+    const cat = (searchParams.get('categoria') || '').toLowerCase();
+    setFilter(VALID_FILTERS.includes(cat) ? cat : 'todos');
     loadProducts();
   }, []);
 
