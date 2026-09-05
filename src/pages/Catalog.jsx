@@ -11,7 +11,7 @@ const VALID_FILTERS = ['todos', 'hombre', 'mujer', 'unisex', 'ofertas', 'nuevos'
 
 export default function Catalog() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
@@ -98,32 +98,138 @@ export default function Catalog() {
 
   const firstLine = (desc) => desc ? desc.split('\n')[0] : '';
 
+  const [openFilters, setOpenFilters] = useState(false);
+
+  const categoryCounts = useMemo(() => {
+    const counts = {};
+    products.forEach(p => { counts[p.category] = (counts[p.category] || 0) + 1; });
+    return counts;
+  }, [products]);
+
+  const offerCount = products.filter(isProductOffer).length;
+  const newCount = products.filter(isProductNew).length;
+
+  const chips = [
+    { v: 'todos', l: 'Todos', count: products.length },
+    { v: 'hombre', l: 'Hombre', count: categoryCounts.hombre || 0 },
+    { v: 'mujer', l: 'Mujer', count: categoryCounts.mujer || 0 },
+    { v: 'unisex', l: 'Unisex', count: categoryCounts.unisex || 0 },
+    { v: 'importados', l: 'Importados', count: categoryCounts.importados || 0 },
+    { v: 'ofertas', l: 'Ofertas', count: offerCount },
+    { v: 'nuevos', l: 'Nuevos', count: newCount }
+  ];
+
+  const priceList = useMemo(() => {
+    return products.map(p => parseFloat(p.price) || 0).filter(v => v > 0).sort((a, b) => a - b);
+  }, [products]);
+
+  const pmin = priceList[0] || 0;
+  const pmax = priceList[priceList.length - 1] || 100;
+  const pstep = Math.round((pmax - pmin) / 3);
+  const pricePresets = [
+    { label: `Hasta $${pmin + pstep}`, min: '', max: String(pmin + pstep) },
+    { label: `$${pmin + pstep} - $${pmax - pstep}`, min: String(pmin + pstep), max: String(pmax - pstep) },
+    { label: `Desde $${pmax - pstep}`, min: String(pmax - pstep), max: '' }
+  ];
+
+  const activeFilterCount = (filter !== 'todos' ? 1 : 0)
+    + (brandFilter ? 1 : 0)
+    + (minPrice !== '' || maxPrice !== '' ? 1 : 0)
+    + (sort !== 'default' ? 1 : 0);
+
+  const clearFilters = () => {
+    setFilter('todos');
+    setBrandFilter('');
+    setMinPrice('');
+    setMaxPrice('');
+    setSort('default');
+    setSearchInput('');
+    setSearch('');
+  };
+
+  const selectCategory = (v) => {
+    setFilter(v);
+    const params = new URLSearchParams(searchParams);
+    if (v === 'todos') params.delete('categoria');
+    else params.set('categoria', v);
+    setSearchParams(params, { replace: true });
+  };
+
+  const applyPrice = (min, max) => {
+    setMinPrice(min);
+    setMaxPrice(max);
+    setOpenFilters(true);
+  };
+
   return (
     <>
-      <input className="search-bar" placeholder="Buscar perfume..." value={searchInput} onChange={e => setSearchInput(e.target.value)} />
-      <div className="filter-row">
-        {[{v:'todos',l:'Todos'},{v:'hombre',l:'Hombre'},{v:'mujer',l:'Mujer'},{v:'unisex',l:'Unisex'},{v:'ofertas',l:'Ofertas'},{v:'nuevos',l:'Nuevos'},{v:'importados',l:'Importados'}].map(f => (
-          <button key={f.v} className={`filter-chip ${filter === f.v ? 'active' : ''}`} onClick={() => setFilter(f.v)}>{f.l}</button>
-        ))}
+      <div className="catalog-filter-bar">
+        <div style={{ position: 'relative' }}>
+          <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--gray-400)' }}>{'\uD83D\uDD0D'}</span>
+          {searchInput && (
+            <button className="search-clear" onClick={() => { setSearchInput(''); setSearch(''); }} aria-label="Limpiar busqueda">{'\u2715'}</button>
+          )}
+          <input className="search-bar search-icon-pad" placeholder="Buscar perfume o marca..." value={searchInput} onChange={e => setSearchInput(e.target.value)} />
+        </div>
+
+        <div className="filter-row">
+          {chips.map(f => (
+            <button key={f.v} className={`filter-chip ${filter === f.v ? 'active' : ''}`} onClick={() => selectCategory(f.v)}>
+              {f.l}
+              <span className="chip-count">{f.count}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="filter-toolbar">
+          <button className={`filter-btn ${openFilters ? 'open' : ''}`} onClick={() => setOpenFilters(o => !o)}>
+            <span className="filter-btn-chevron">{openFilters ? '\u25B2' : '\u25BC'}</span> Filtros
+            {activeFilterCount > 0 && <span className="filter-badge">{activeFilterCount}</span>}
+          </button>
+          {activeFilterCount > 0 && (
+            <button className="filter-clear" onClick={clearFilters}>{'\u2715'} Limpiar filtros</button>
+          )}
+        </div>
+
+        {openFilters && (
+          <div className="filter-panel">
+            <select className="filter-select" value={brandFilter} onChange={e => setBrandFilter(e.target.value)}>
+              <option value="">Marca: Todas</option>
+              {brands.map(b => <option key={b} value={b}>{b}</option>)}
+            </select>
+            <select className="filter-select" value={sort} onChange={e => setSort(e.target.value)}>
+              <option value="default">Orden: Por defecto</option>
+              <option value="price-asc">Precio: menor a mayor</option>
+              <option value="price-desc">Precio: mayor a menor</option>
+              <option value="name">Nombre: A-Z</option>
+            </select>
+            <div className="price-presets">
+              {pricePresets.map(pr => (
+                <button
+                  key={pr.label}
+                  className={`filter-chip ${minPrice === pr.min && maxPrice === pr.max ? 'active' : ''}`}
+                  onClick={() => applyPrice(pr.min, pr.max)}
+                >
+                  {pr.label}
+                </button>
+              ))}
+            </div>
+            <div className="filter-toolbar">
+              <input className="price-input" placeholder={`Desde $${pmin}`} type="number" value={minPrice} onChange={e => setMinPrice(e.target.value)} />
+              <span className="price-sep">a</span>
+              <input className="price-input" placeholder={`Hasta $${pmax}`} type="number" value={maxPrice} onChange={e => setMaxPrice(e.target.value)} />
+            </div>
+          </div>
+        )}
       </div>
-      <div className="filter-toolbar">
-        <select className="filter-select" value={brandFilter} onChange={e => setBrandFilter(e.target.value)}>
-          <option value="">Marca: Todas</option>
-          {brands.map(b => <option key={b} value={b}>{b}</option>)}
-        </select>
-        <select className="filter-select" value={sort} onChange={e => setSort(e.target.value)}>
-          <option value="default">Orden: Por defecto</option>
-          <option value="price-asc">Precio: menor a mayor</option>
-          <option value="price-desc">Precio: mayor a menor</option>
-          <option value="name">Nombre: A-Z</option>
-        </select>
+
+      <div className="catalog-results-bar">
+        <span className="catalog-count">{filtered.length} {filtered.length === 1 ? 'perfume' : 'perfumes'}</span>
+        {search.trim() && <span className="catalog-search-chip">"{search}"</span>}
       </div>
-      <div className="filter-toolbar">
-        <input className="price-input" placeholder="Precio min" type="number" value={minPrice} onChange={e => setMinPrice(e.target.value)} />
-        <input className="price-input" placeholder="Precio max" type="number" value={maxPrice} onChange={e => setMaxPrice(e.target.value)} />
-      </div>
+
       {filtered.length === 0 ? (
-        <EmptyState icon="🧴" title="No hay productos" subtext={filter !== 'todos' ? 'Prueba con otro filtro o categoria' : undefined} />
+        <EmptyState icon="🧴" title="No hay productos" subtext={(activeFilterCount > 0 || search.trim()) ? 'Prueba con otros filtros o busca diferente' : undefined} />
       ) : (
         <div className="product-grid">
           {filtered.map(p => (
