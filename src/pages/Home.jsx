@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getDocuments } from '../services/firestoreService';
-import { getStoreSettings, DEFAULT_STORE } from '../services/storeSettingsService';
+import { getStoreSettings, formatWhatsapp, DEFAULT_STORE } from '../services/storeSettingsService';
 import { isProductNew, isProductOffer, productDiscount, isLowStock, getProductImages } from '../utils/productHelpers';
 
 function ProductCard({ product, navigate }) {
@@ -145,7 +145,7 @@ export default function Home() {
         <div style={{fontSize:14,color:'#b8a86b',lineHeight:2}}>
           <div>{'\uD83D\uDCCD'} {store.address}</div>
           <div>{'\uD83D\uDCAC'} Yappy: {store.yappy}</div>
-          <div>{'\uD83D\uDCF1'} WhatsApp: +{store.whatsapp}</div>
+          <div>{'\uD83D\uDCF1'} WhatsApp: {formatWhatsapp(store.whatsapp)}</div>
           <div>{'\uD83D\uDECD\uFE0F'} Envios a Colon gratis, resto del pais por mensajeria</div>
           <div>{'\uD83D\uDD52'} Horario: {store.hours}</div>
         </div>

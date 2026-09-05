@@ -26,3 +26,9 @@ export const saveStoreSettings = async (data) => {
   await setDocument('settings', SETTING_ID, { ...DEFAULT_STORE, ...data, whatsapp });
   return { ...DEFAULT_STORE, ...data, whatsapp };
 };
+
+export const formatWhatsapp = (v) => {
+  const d = (v || '').replace(/\D/g, '');
+  if (d.length < 10) return d;
+  return '+' + d.slice(0, d.length - 8) + ' ' + d.slice(-8, -4) + '-' + d.slice(-4);
+};
