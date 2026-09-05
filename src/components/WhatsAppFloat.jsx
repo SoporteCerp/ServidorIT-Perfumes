@@ -10,7 +10,7 @@ export default function WhatsAppFloat({ visible = true }) {
 
   if (!visible || !store.whatsapp) return null;
 
-  const msg = encodeURIComponent('Hola ' + store.name + '! Tengo una consulta sobre sus perfumes.');
+  const msg = encodeURIComponent('Hola ' + store.name + '! 👋 Vi su tienda de fragancias y me encantaría una recomendación. ¿Me pueden asesorar sobre precios y envíos?');
 
   return (
     <a
