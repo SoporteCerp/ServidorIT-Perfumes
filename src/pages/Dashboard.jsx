@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getDocuments, updateDocument, deleteDocument } from '../services/firestoreService';
 import { sendInvoice } from '../services/emailService';
+import { clearNotificationType } from '../services/notificationService';
 import { toast } from '../components/Toast';
 
 const statusLabel = {
@@ -20,6 +21,11 @@ export default function Dashboard() {
   const [loadingAction, setLoadingAction] = useState(null);
 
   useEffect(() => { loadData(); }, []);
+
+  useEffect(() => {
+    clearNotificationType('order');
+    clearNotificationType('payment');
+  }, []);
 
   const loadData = async () => {
     // Only fetch the last 100 orders for display

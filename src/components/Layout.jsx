@@ -100,7 +100,16 @@ export default function Layout() {
               </button>
             )}
             <button className="icon-btn" onClick={() => {
-              if (notifCount > 0 && role !== 'admin' && notifCounts.order > 0) {
+              if (role === 'admin') {
+                if (notifCounts.order > 0 || notifCounts.payment > 0) {
+                  clearNotificationType('order');
+                  clearNotificationType('payment');
+                  navigate('/dashboard');
+                } else {
+                  clearNotificationType('chat');
+                  navigate('/chat');
+                }
+              } else if (notifCount > 0 && notifCounts.order > 0) {
                 clearNotificationType('order');
                 navigate('/orders');
               } else {
