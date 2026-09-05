@@ -177,7 +177,8 @@ export default function Dashboard() {
     win.print();
   };
 
-  const pendingOrders = orders.filter(o => o.status === 'pendiente_confirmacion');
+  const pendingOrders = orders.filter(o => o.status === 'pendiente_confirmacion' && o.screenshot);
+  const missingPaymentOrders = orders.filter(o => o.status === 'pendiente_confirmacion' && !o.screenshot);
   const paidOrders = orders.filter(o => o.status === 'pagado' || o.status === 'en_transito' || o.status === 'procesando');
 
   const last7 = [];
@@ -302,6 +303,39 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {missingPaymentOrders.length > 0 && (
+        <>
+          <h3 className="section-title mb-15" style={{color:'var(--gray-500)'}}>{'\u25CB'} Pedidos sin comprobante ({missingPaymentOrders.length})</h3>
+          <p style={{fontSize:12,color:'var(--gray-400)',marginTop:-10,marginBottom:12}}>
+            El cliente creo el pedido pero aun no sube la imagen ni la referencia de pago. No los confirmes hasta recibir el comprobante.
+          </p>
+          {missingPaymentOrders.map(order => (
+            <div key={order.id} className="card" style={{borderLeft:'4px solid var(--gray-400)',opacity:0.85}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
+                <div>
+                  <div style={{fontWeight:700,fontSize:16}}>{order.customerName}</div>
+                  <div style={{fontSize:13,color:'var(--gray-500)'}}>{order.customerPhone}</div>
+                </div>
+                <div style={{textAlign:'right'}}>
+                  <div style={{fontWeight:700,fontSize:20,color:'var(--gray-500)'}}>${order.total?.toFixed(2)}</div>
+                  <div style={{fontSize:12,color:'var(--gray-400)'}}>
+                    {order.createdAt?.toDate ? new Date(order.createdAt.toDate()).toLocaleDateString() : ''}
+                  </div>
+                </div>
+              </div>
+              <div style={{fontSize:13,color:'var(--gray-500)',marginBottom:8}}>
+                {order.items?.map((item, i) => (
+                  <span key={i}>{item.name} x{item.quantity}{i < order.items.length - 1 ? ', ' : ''}</span>
+                ))}
+              </div>
+              <div style={{background:'var(--gray-100)',borderRadius:8,padding:10,fontSize:13,color:'var(--gray-500)'}}>
+                {'\u23F3'} Esperando comprobante de pago del cliente...
+              </div>
+            </div>
+          ))}
+        </>
+      )}
 
       {pendingOrders.length > 0 && (
         <>

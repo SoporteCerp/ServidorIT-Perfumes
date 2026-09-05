@@ -25,7 +25,7 @@ export default function AdminPanel() {
     const today = new Date().toDateString();
     const isToday = (t) => t && t.toDate && new Date(t.toDate()).toDateString() === today;
 
-    setPendingPayments(orders.filter(o => o.status === 'pendiente_confirmacion').length);
+    setPendingPayments(orders.filter(o => o.status === 'pendiente_confirmacion' && o.screenshot).length);
 
     let sales = 0; let ordersToday = 0;
     orders.forEach(o => {
