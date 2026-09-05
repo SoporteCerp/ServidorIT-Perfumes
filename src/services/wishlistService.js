@@ -51,6 +51,7 @@ export const toggleWishlist = (productId) => {
   
   localStorage.setItem(WISHLIST_KEY, JSON.stringify(newWishlist));
   syncToFirestore(newWishlist);
+  try { window.dispatchEvent(new CustomEvent('wishlist-updated')); } catch (err) {}
   return newWishlist;
 };
 

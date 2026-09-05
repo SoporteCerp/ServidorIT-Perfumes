@@ -71,6 +71,21 @@ export default function Layout() {
     document.title = notifCount > 0 ? '(' + notifCount + ') Esencia Gale' : 'Esencia Gale';
   }, [notifCount]);
 
+  useEffect(() => {
+    const p = location.pathname;
+    if (p.startsWith('/chat')) clearNotificationType('chat');
+    if (p.startsWith('/orders')) clearNotificationType('order');
+    if (p.startsWith('/dashboard')) { clearNotificationType('order'); clearNotificationType('payment'); }
+    if (p.startsWith('/notifications')) { clearNotificationType('order'); clearNotificationType('payment'); clearNotificationType('chat'); }
+    setWishCount(getWishlistCount());
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const handler = () => setWishCount(getWishlistCount());
+    window.addEventListener('wishlist-updated', handler);
+    return () => window.removeEventListener('wishlist-updated', handler);
+  }, []);
+
   const navItems = role === 'admin' ? adminNav : customerNav;
 
   const handleLogout = async () => { await logoutUser(); navigate('/login'); };
