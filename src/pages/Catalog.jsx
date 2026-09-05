@@ -237,7 +237,7 @@ export default function Catalog() {
               <div className="product-image" onClick={(e) => { e.stopPropagation(); openViewer(p); }} style={{cursor:'zoom-in'}}>
                 {(() => {
                   const imgs = getProductImages(p);
-                  return imgs[0] ? <img src={imgs[0]} alt={p.name} style={{width:'100%',height:'100%',objectFit:'cover'}} /> : '🧴';
+                  return imgs[0] ? <img src={imgs[0]} alt={p.name} loading="lazy" decoding="async" style={{width:'100%',height:'100%',objectFit:'cover'}} /> : '🧴';
                 })()}
                 <div className="product-badges">
                   {isProductOffer(p) && <span className="prod-badge badge-offer">-{productDiscount(p)}%</span>}

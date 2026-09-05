@@ -14,7 +14,7 @@ function ProductCard({ product, navigate }) {
       onClick={() => navigate('/product/' + product.id)}
     >
       <div className="product-image" style={{aspectRatio:'1 / 1'}}>
-        {imgs[0] ? <img src={imgs[0]} alt={product.name} style={{width:'100%',height:'100%',objectFit:'cover'}} /> : '🧴'}
+        {imgs[0] ? <img src={imgs[0]} alt={product.name} loading="lazy" decoding="async" style={{width:'100%',height:'100%',objectFit:'cover'}} /> : '🧴'}
         <div className="product-badges">
           {discount > 0 && <span className="prod-badge badge-offer">-{discount}%</span>}
           {isProductNew(product) && <span className="prod-badge badge-new">NUEVO</span>}
@@ -231,7 +231,21 @@ export default function Home() {
           <div>{'\uD83D\uDECD\uFE0F'} Envios a Colon gratis, resto del pais por mensajeria</div>
           <div>{'\uD83D\uDD52'} Horario: {store.hours}</div>
         </div>
-        <div style={{fontSize:12,color:'#8a7a3a',marginTop:14}}>© {(new Date()).getFullYear()} {store.name}. Todos los derechos reservados.</div>
+        <div style={{display:'flex',justifyContent:'center',gap:16,flexWrap:'wrap',marginTop:14}}>
+          <span
+            style={{color:'#b8a86b',fontSize:12,cursor:'pointer',textDecoration:'underline'}}
+            onClick={() => navigate('/envios')}
+          >Envios</span>
+          <span
+            style={{color:'#b8a86b',fontSize:12,cursor:'pointer',textDecoration:'underline'}}
+            onClick={() => navigate('/devoluciones')}
+          >Devoluciones</span>
+          <span
+            style={{color:'#b8a86b',fontSize:12,cursor:'pointer',textDecoration:'underline'}}
+            onClick={() => navigate('/terminos')}
+          >Terminos y Condiciones</span>
+        </div>
+        <div style={{fontSize:12,color:'#8a7a3a',marginTop:10}}>© {(new Date()).getFullYear()} {store.name}. Todos los derechos reservados.</div>
       </div>
     </div>
   );

@@ -10,6 +10,14 @@ let shownPaymentIds = new Set();
 let shownChatIds = new Set();
 let chatActive = false;
 
+const customerStatusLabel = {
+  pagado: 'Pago aprobado',
+  procesando: 'En proceso',
+  en_transito: 'En camino',
+  entregado: 'Entregado',
+  rechazado: 'Pago rechazado. Revisa Mis Pedidos.'
+};
+
 export const setChatActive = (v) => { chatActive = !!v; };
 export const isChatActive = () => chatActive;
 
@@ -61,10 +69,11 @@ export const subscribeToNotifications = (callback) => {
   const user = auth.currentUser;
   if (!user) return () => {};
 
-  let initialized = { orders: false, payments: false, chat: false };
+  let initialized = { orders: false, payments: false, chat: false, customerOrders: false };
   let unsubNewOrders = () => {};
   let unsubPendingPayments = () => {};
   let unsubChat = () => {};
+  let unsubCustomerOrders = () => {};
 
   (async () => {
     let role = null;
@@ -121,9 +130,35 @@ export const subscribeToNotifications = (callback) => {
     } catch (e) {
       console.error('No se pudo suscribir a chats', e);
     }
+
+    try {
+      if (role !== 'admin') {
+        const trackedStatus = new Map();
+        unsubCustomerOrders = onSnapshot(
+          query(collection(db, 'orders'), where('userId', '==', user.uid), orderBy('createdAt', 'desc')),
+          (snapshot) => {
+            if (!initialized.customerOrders) { initialized.customerOrders = true; return; }
+            snapshot.docChanges().forEach(c => {
+              const order = c.doc.data();
+              if (c.type === 'modified') {
+                const previous = trackedStatus.get(c.doc.id);
+                if (previous && previous !== order.status && order.status) {
+                  const label = customerStatusLabel[order.status] || order.status;
+                  callback('order', prev => prev + 1);
+                  showToast('Pedido #' + c.doc.id.slice(0, 8).toUpperCase(), 'Tu pedido ahora esta: ' + label);
+                }
+              }
+              trackedStatus.set(c.doc.id, order.status);
+            });
+          }
+        );
+      }
+    } catch (e) {
+      console.error('No se pudieron suscribir notificaciones de pedidos del cliente', e);
+    }
   })();
 
-  return () => { unsubNewOrders(); unsubPendingPayments(); unsubChat(); };
+  return () => { unsubNewOrders(); unsubPendingPayments(); unsubChat(); unsubCustomerOrders(); };
 };
 
 export const clearNotificationType = (type) => {

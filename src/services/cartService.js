@@ -2,6 +2,19 @@ import { auth } from './firebase';
 import { getDocument, setDocument } from './firestoreService';
 
 const CART_KEY = 'servidorit_cart';
+const CART_TIME_KEY = 'servidorit_cart_lastAt';
+
+export const touchCartTime = () => {
+  try { localStorage.setItem(CART_TIME_KEY, Date.now().toString()); } catch (err) {}
+};
+
+export const getCartIdleHours = () => {
+  try {
+    const t = parseInt(localStorage.getItem(CART_TIME_KEY) || '0', 10);
+    if (!t) return 0;
+    return Math.round(((Date.now() - t) / 3600000) * 10) / 10;
+  } catch (err) { return 0; }
+};
 
 const syncToFirestore = async (cart) => {
   try {
@@ -54,6 +67,7 @@ export const addToCart = (product, quantity = 1) => {
   
   localStorage.setItem(CART_KEY, JSON.stringify(newCart));
   syncToFirestore(newCart);
+  touchCartTime();
   return newCart;
 };
 
@@ -67,6 +81,7 @@ export const updateCartQuantity = (productId, quantity) => {
   
   localStorage.setItem(CART_KEY, JSON.stringify(newCart));
   syncToFirestore(newCart);
+  touchCartTime();
   return newCart;
 };
 
@@ -76,12 +91,14 @@ export const removeFromCart = (productId) => {
   
   localStorage.setItem(CART_KEY, JSON.stringify(newCart));
   syncToFirestore(newCart);
+  touchCartTime();
   return newCart;
 };
 
 export const clearCart = () => {
   localStorage.removeItem(CART_KEY);
   syncToFirestore([]);
+  touchCartTime();
   return [];
 };
 

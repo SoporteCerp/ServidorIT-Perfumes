@@ -63,6 +63,32 @@ export default function Reports() {
     });
   });
 
+  const exportCSV = () => {
+    const esc = (v) => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+    const rows = [[
+      'Fecha', 'Pedido', 'Cliente', 'Telefono', 'Email', 'Estado', 'Pago', 'Items',
+      'Subtotal', 'Envio', 'IVA', 'Descuento', 'Total'
+    ]];
+    filtered.forEach(o => {
+      const fecha = o.createdAt ? new Date(o.createdAt.seconds * 1000).toLocaleDateString('es-PA') : '';
+      const items = (o.items || []).map(i => `${i.name} x${i.quantity}`).join(' | ');
+      rows.push([
+        fecha, o.id, o.customerName, o.customerPhone, o.customerEmail, o.status, o.paymentStatus, items,
+        o.subtotal, o.shippingCost, o.iva, o.discount, o.total
+      ]);
+    });
+    const csv = rows.map(r => r.map(esc).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ventas_esencia_gale_' + period + '_' + new Date().toISOString().slice(0, 10) + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const sortedProducts = Object.entries(topProducts).sort((a, b) => b[1].revenue - a[1].revenue).slice(0, 5);
   const sortedBrands = Object.entries(salesByBrand).sort((a, b) => b[1].revenue - a[1].revenue);
   const maxRevenue = Math.max(...Object.values(salesByCategory).map(c => c.revenue), 1);
@@ -77,6 +103,10 @@ export default function Reports() {
           <button key={p.v} className={'chip ' + (period === p.v ? 'active' : '')} onClick={() => setPeriod(p.v)}>{p.l}</button>
         ))}
       </div>
+
+      <button className="btn btn-outline mb-15" onClick={exportCSV} disabled={filtered.length === 0} style={{width:'100%',fontSize:14}}>
+        {'\u2B73'} Descargar ventas (CSV) {filtered.length > 0 ? `(${filtered.length})` : ''}
+      </button>
 
       <div className="stat-grid">
         <div className="stat-card">

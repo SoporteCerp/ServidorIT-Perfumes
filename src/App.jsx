@@ -25,6 +25,7 @@ const StoreLocations = lazy(() => import('./pages/StoreLocations'));
 const StoreSettings = lazy(() => import('./pages/StoreSettings'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const Wishlist = lazy(() => import('./pages/Wishlist'));
+const Legal = lazy(() => import('./pages/Legal'));
 
 function AdminRoute({ children }) {
   const { currentUser, userRole } = useAuth();
@@ -70,6 +71,9 @@ function AppRoutes() {
           <Route path="/stores" element={<StoreLocations />} />
           <Route path="/store-settings" element={<AdminRoute><StoreSettings /></AdminRoute>} />
           <Route path="/notifications" element={<Notifications />} />
+          <Route path="/envios" element={<Legal kind="envios" />} />
+          <Route path="/devoluciones" element={<Legal kind="devoluciones" />} />
+          <Route path="/terminos" element={<Legal kind="terminos" />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Route>
       )}
