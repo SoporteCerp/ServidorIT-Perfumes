@@ -96,7 +96,7 @@ export const subscribeToNotifications = (callback) => {
           (snapshot) => {
             if (!initialized.payments) { initialized.payments = true; return; }
             snapshot.docChanges().forEach(c => {
-              if (c.type === 'added') callback('payment', prev => prev + 1);
+              if ((c.type === 'added' || c.type === 'modified') && c.doc.data().screenshot) callback('payment', prev => prev + 1);
             });
           }
         );
@@ -214,7 +214,7 @@ const listenPendingPayments = () => {
   const unsub = onSnapshot(q, (snapshot) => {
     if (!initialized) { initialized = true; return; }
     snapshot.docChanges().forEach((change) => {
-      if (change.type === 'modified' && !shownPaymentIds.has(change.doc.id)) {
+      if ((change.type === 'added' || change.type === 'modified') && change.doc.data().screenshot && !shownPaymentIds.has(change.doc.id)) {
         shownPaymentIds.add(change.doc.id);
         const order = change.doc.data();
         showToast('Pago Pendiente', order.customerName + ' envio comprobante de $' + order.total);
