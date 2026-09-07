@@ -26,6 +26,7 @@ const StoreSettings = lazy(() => import('./pages/StoreSettings'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const Wishlist = lazy(() => import('./pages/Wishlist'));
 const Legal = lazy(() => import('./pages/Legal'));
+const Descargar = lazy(() => import('./pages/Descargar'));
 
 function AdminRoute({ children }) {
   const { currentUser, userRole } = useAuth();
@@ -46,6 +47,7 @@ function AppRoutes() {
   return (
     <Suspense fallback={pageLoader}>
       <Routes>
+        <Route path="/descargar" element={<Descargar />} />
       {!currentUser ? (
         <>
           <Route path="/login" element={<Login />} />

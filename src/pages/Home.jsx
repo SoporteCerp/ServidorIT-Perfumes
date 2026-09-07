@@ -244,6 +244,10 @@ export default function Home() {
             style={{color:'#b8a86b',fontSize:12,cursor:'pointer',textDecoration:'underline'}}
             onClick={() => navigate('/terminos')}
           >Terminos y Condiciones</span>
+          <span
+            style={{color:'#b8a86b',fontSize:12,cursor:'pointer',textDecoration:'underline'}}
+            onClick={() => navigate('/descargar')}
+          >{'\uD83D\uDCF1'} Descargar App</span>
         </div>
         <div style={{fontSize:12,color:'#8a7a3a',marginTop:10}}>© {(new Date()).getFullYear()} {store.name}. Todos los derechos reservados.</div>
       </div>

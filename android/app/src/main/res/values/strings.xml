@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Esencia Gale</string>
+    <string name="title_activity_main">Esencia Gale</string>
+    <string name="package_name">com.esenciagale.app</string>
+    <string name="custom_url_scheme">com.esenciagale.app</string>
+</resources>
