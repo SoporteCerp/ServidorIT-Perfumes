@@ -76,6 +76,7 @@ function AppRoutes() {
           <Route path="/envios" element={<Legal kind="envios" />} />
           <Route path="/devoluciones" element={<Legal kind="devoluciones" />} />
           <Route path="/terminos" element={<Legal kind="terminos" />} />
+          <Route path="/privacidad" element={<Legal kind="privacidad" />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Route>
       )}

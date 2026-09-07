@@ -37,13 +37,27 @@ const SECTIONS = {
       ['\uD83D\uDD10 Privacidad', 'Tus datos personales solo se usan para procesar tu pedido y coordinar la entrega. Nunca los compartimos con terceros.'],
       ['\uD83D\uDCDE Contacto', 'WhatsApp y chat en la app para consultas y soporte. Nuestro horario: Lun a Sab 9am - 7pm.']
     ]
+  },
+  privacidad: {
+    title: 'Politica de Privacidad',
+    icon: '\uD83D\uDD10',
+    intro: 'En Esencia Gale nos tomamos en serio tu privacidad. Esta politica explica que datos recopilamos y como los usamos.',
+    items: [
+      ['\uD83D\uDCC4 Datos que recopilamos', 'Nombre, correo electronico y telefono que registras al crear tu cuenta, mas tu direccion de envio al hacer un pedido.'],
+      ['\uD83C\uDFED Para que los usamos', 'Unicamente para procesar tus pedidos, coordinar la entrega, gestionar tu cuenta y enviarte notificaciones del estado de tus compras.'],
+      ['\uD83D\uDD12 Almacenamiento seguro', 'Tus datos se guardan de forma encriptada en nuestros servidores (Google Firebase). No los vendemos ni compartimos con terceros.'],
+      ['\uD83D\uDD11 Pagos', 'Los pagos se realizan por Yappy. No almacenamos datos de tarjetas ni cuentas bancarias.'],
+      ['\uD83D\uDCC5 Retencion', 'Guardamos tu informacion mientras tu cuenta este activa. Puedes pedirnos eliminar tus datos en cualquier momento por WhatsApp.'],
+      ['\uD83D\uDCAC Contacto', 'Para consultas de privacidad o solicitar eliminacion de datos, escribenos por WhatsApp al numero de contacto de la tienda.']
+    ]
   }
 };
 
 const LINKS = [
   { v: 'envios', label: 'Envios' },
   { v: 'devoluciones', label: 'Devoluciones' },
-  { v: 'terminos', label: 'Terminos y Condiciones' }
+  { v: 'terminos', label: 'Terminos y Condiciones' },
+  { v: 'privacidad', label: 'Privacidad' }
 ];
 
 export default function Legal({ kind }) {
