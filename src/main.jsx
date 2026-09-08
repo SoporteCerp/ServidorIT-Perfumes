@@ -1,7 +1,13 @@
 import { StrictMode, Component } from 'react'
 import { createRoot } from 'react-dom/client'
+import { registerSW } from 'virtual:pwa-register'
 import './index.css'
 import App from './App.jsx'
+
+const isNativeApp = typeof window !== 'undefined' && !!window.Capacitor && !!window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+if (!isNativeApp) {
+  registerSW({ immediate: true })
+}
 
 class ErrorBoundary extends Component {
   constructor(props) {

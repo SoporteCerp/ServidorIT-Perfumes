@@ -1325,15 +1325,9 @@ body {
 
 /* Adaptacion a tablet y pantallas grandes */
 @media (min-width: 720px) {
-  body { max-width: 920px; }
-  .bottom-nav { max-width: 920px; }
-  .cart-reminder { max-width: 888px; }
-  .modal-content { max-width: 920px; }
-  .product-grid { grid-template-columns: repeat(3, 1fr); }
-}
-@media (min-width: 1200px) {
-  body { max-width: 1080px; }
-  .bottom-nav { max-width: 1080px; }
-  .cart-reminder { max-width: 1048px; }
-  .product-grid { grid-template-columns: repeat(4, 1fr); }
+  body { max-width: 100%; }
+  .bottom-nav { max-width: 100%; }
+  .cart-reminder { max-width: 100%; }
+  .modal-content { max-width: 100%; }
+  .product-grid { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
 }

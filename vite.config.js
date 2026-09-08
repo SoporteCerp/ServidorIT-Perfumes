@@ -7,6 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: false,
       manifest: {
         name: 'Esencia Gale - Las mejores fragancias',
         short_name: 'Esencia Gale',
