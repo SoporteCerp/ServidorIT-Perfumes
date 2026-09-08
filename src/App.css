@@ -1322,3 +1322,18 @@ body {
   .panel-stats { grid-template-columns: repeat(4, 1fr); }
   .panel-grid { grid-template-columns: 1fr 1fr; }
 }
+
+/* Adaptacion a tablet y pantallas grandes */
+@media (min-width: 720px) {
+  body { max-width: 920px; }
+  .bottom-nav { max-width: 920px; }
+  .cart-reminder { max-width: 888px; }
+  .modal-content { max-width: 920px; }
+  .product-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 1200px) {
+  body { max-width: 1080px; }
+  .bottom-nav { max-width: 1080px; }
+  .cart-reminder { max-width: 1048px; }
+  .product-grid { grid-template-columns: repeat(4, 1fr); }
+}
