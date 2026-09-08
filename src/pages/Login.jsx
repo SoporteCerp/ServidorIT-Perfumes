@@ -13,7 +13,7 @@ export default function Login() {
   const [showReset, setShowReset] = useState(false);
 
   useEffect(() => {
-    if (Notification && Notification.permission === 'default') {
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
       requestNotificationPermission();
       setupForegroundListener();
     }

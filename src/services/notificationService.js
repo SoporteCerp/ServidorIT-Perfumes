@@ -23,7 +23,7 @@ export const isChatActive = () => chatActive;
 
 export const requestNotificationPermission = async () => {
   try {
-    if ('Notification' in window) {
+    if (messaging && 'Notification' in window) {
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
         const token = await getToken(messaging, {
@@ -51,14 +51,17 @@ const saveFCMToken = async (token) => {
 };
 
 export const setupForegroundListener = () => {
-  onMessage(messaging, (payload) => {
-    const title = payload.notification.title || 'Esencia Gale';
-    const body = payload.notification.body || 'Tienes una notificacion';
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(title, { body, icon: '/icon-192.png', tag: 'esencia-' + Date.now() });
-    }
-    showToast(title, body);
-  });
+  if (!messaging) return;
+  try {
+    onMessage(messaging, (payload) => {
+      const title = payload.notification.title || 'Esencia Gale';
+      const body = payload.notification.body || 'Tienes una notificacion';
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(title, { body, icon: '/icon-192.png', tag: 'esencia-' + Date.now() });
+      }
+      showToast(title, body);
+    });
+  } catch (e) { console.warn('No se pudo escuchar notificaciones en primer plano', e); }
 };
 
 export const showToast = (title, message) => {

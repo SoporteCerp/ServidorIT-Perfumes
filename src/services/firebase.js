@@ -16,5 +16,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-export const messaging = getMessaging(app);
+export let messaging = null;
+try { messaging = getMessaging(app); } catch (e) { console.warn('Firebase Messaging no disponible en este entorno', e); }
 export const storage = getStorage(app);
