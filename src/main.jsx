@@ -5,7 +5,11 @@ import './index.css'
 import App from './App.jsx'
 
 const isNativeApp = typeof window !== 'undefined' && !!window.Capacitor && !!window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
-if (!isNativeApp) {
+if (isNativeApp) {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister()));
+  }
+} else {
   registerSW({ immediate: true })
 }
 
