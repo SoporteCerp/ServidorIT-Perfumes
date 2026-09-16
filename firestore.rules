@@ -21,6 +21,7 @@ service cloud.firestore {
         request.auth != null
         && resource.data.userId == request.auth.uid
         && request.resource.data.paymentStatus == 'pendiente'
+        && (!('status' in request.resource.data.diff(resource.data).affectedKeys()) || request.resource.data.status == 'pendiente_confirmacion')
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['screenshot', 'reference', 'status', 'paymentStatus', 'updatedAt'])
       );
       allow delete: if isAdmin();
