@@ -14,12 +14,29 @@ export default function AdminInventory() {
   const [form, setForm] = useState(defaultForm);
   const [imagePreview, setImagePreview] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
 
   useEffect(() => { loadProducts(); }, []);
 
   const loadProducts = async () => {
     const data = await getDocuments('products', [], 'name', 'asc');
     setProducts(data);
+  };
+
+  const handleDeleteAll = async () => {
+    if (!products.length) return;
+    if (!confirm(`¿Eliminar TODOS los ${products.length} productos del inventario?`)) return;
+    if (!confirm('Esta acción es irreversible. ¿Continuar de todos modos?')) return;
+    setDeletingAll(true);
+    let ok = 0;
+    for (const p of products) {
+      try { await deleteDocument('products', p.id); ok++; }
+      catch (err) { console.error('No se pudo eliminar', p.id, err); }
+    }
+    if (ok === products.length) toast.success('Inventario vacío', `Se eliminaron ${ok} productos`);
+    else toast.warning('Eliminación parcial', `Se eliminaron ${ok} de ${products.length} productos`);
+    setDeletingAll(false);
+    loadProducts();
   };
 
   const openAdd = () => { setEditingId(null); setForm(defaultForm); setImagePreview(null); setModalOpen(true); };
@@ -119,7 +136,14 @@ export default function AdminInventory() {
 
   return (
     <>
-      <h3 className="section-title mb-15">Inventario de Perfumes</h3>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,flexWrap:'wrap'}}>
+        <h3 className="section-title mb-15">Inventario de Perfumes</h3>
+        {products.length > 0 && (
+          <button className="btn btn-sm btn-danger" onClick={handleDeleteAll} disabled={deletingAll}>
+            {deletingAll ? 'Eliminando...' : '🗑 Eliminar todo'}
+          </button>
+        )}
+      </div>
 
       {products.length === 0 ? (
         <EmptyState icon="🧴" title="No hay productos" subtext="Agrega tu primer perfume al inventario" />
