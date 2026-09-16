@@ -1,4 +1,4 @@
-import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, getDoc, query, where, orderBy, limit, serverTimestamp, onSnapshot, setDoc, getAggregateFromServer, sum, count, average } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, getDoc, query, where, orderBy, limit, serverTimestamp, onSnapshot, setDoc, getAggregateFromServer, sum, count, average, writeBatch } from 'firebase/firestore';
 import { db } from './firebase';
 
 export const addDocument = async (col, data) => {
@@ -21,6 +21,15 @@ export const updateDocument = async (col, id, data) => {
 
 export const deleteDocument = async (col, id) => {
   await deleteDoc(doc(db, col, id));
+};
+
+export const deleteDocumentsBatch = async (col, ids) => {
+  const CHUNK = 400;
+  for (let i = 0; i < ids.length; i += CHUNK) {
+    const batch = writeBatch(db);
+    ids.slice(i, i + CHUNK).forEach(id => batch.delete(doc(db, col, id)));
+    await batch.commit();
+  }
 };
 
 export const getDocuments = async (col, filters = [], orderByField = 'createdAt', orderDir = 'desc', limitCount = 100) => {

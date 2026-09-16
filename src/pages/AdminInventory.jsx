@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { getDocuments, addDocument, updateDocument, deleteDocument } from '../services/firestoreService';
+import { getDocuments, addDocument, updateDocument, deleteDocument, deleteDocumentsBatch } from '../services/firestoreService';
 import { recordPrice } from '../services/priceHistoryService';
 import { uploadProductImage } from '../services/storageService';
 import { toast } from '../components/Toast';
@@ -28,13 +28,13 @@ export default function AdminInventory() {
     if (!confirm(`¿Eliminar TODOS los ${products.length} productos del inventario?`)) return;
     if (!confirm('Esta acción es irreversible. ¿Continuar de todos modos?')) return;
     setDeletingAll(true);
-    let ok = 0;
-    for (const p of products) {
-      try { await deleteDocument('products', p.id); ok++; }
-      catch (err) { console.error('No se pudo eliminar', p.id, err); }
+    try {
+      await deleteDocumentsBatch('products', products.map(p => p.id));
+      toast.success('Inventario vacío', `Se eliminaron ${products.length} productos`);
+    } catch (err) {
+      console.error(err);
+      toast.error('Error', 'No se pudo vaciar el inventario');
     }
-    if (ok === products.length) toast.success('Inventario vacío', `Se eliminaron ${ok} productos`);
-    else toast.warning('Eliminación parcial', `Se eliminaron ${ok} de ${products.length} productos`);
     setDeletingAll(false);
     loadProducts();
   };
